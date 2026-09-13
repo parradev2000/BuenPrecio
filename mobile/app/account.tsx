@@ -1,0 +1,203 @@
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, Text, View } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { api } from '../src/api/client';
+import type { Application } from '../src/api/types';
+import { Alert, Button, Loading, Screen, TextField } from '../src/components/ui';
+import { useAuth } from '../src/context/AuthContext';
+import { COLORS } from '../src/lib/format';
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'En revisión',
+  approved: 'Aprobada',
+  rejected: 'Rechazada',
+};
+
+export default function AccountScreen() {
+  const router = useRouter();
+  const { session, logout } = useAuth();
+  const [application, setApplication] = useState<Application | null | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwMessage, setPwMessage] = useState<string | null>(null);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwBusy, setPwBusy] = useState(false);
+
+  const loadApplication = useCallback(async () => {
+    if (!session || session.user.role !== 'consumidor') {
+      setApplication(undefined);
+      setError(null);
+      return;
+    }
+    setError(null);
+    try {
+      const res = await api<{ application: Application | null }>('/me/producer-application', { auth: true });
+      setApplication(res.application);
+    } catch (e) {
+      setApplication(null);
+      setError(e instanceof Error ? e.message : 'No se pudo cargar');
+    }
+  }, [session]);
+
+  useEffect(() => {
+    void loadApplication();
+  }, [loadApplication]);
+
+  if (!session) {
+    return null;
+  }
+
+  const roleLabel =
+    session.user.role === 'consumidor'
+      ? 'Consumidor'
+      : session.user.role === 'productor'
+        ? 'Productor'
+        : 'Administrador';
+
+  async function requestProducer() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/me/producer-application', { method: 'POST', auth: true });
+      await loadApplication();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo enviar la solicitud');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changePassword() {
+    setPwBusy(true);
+    setPwError(null);
+    setPwMessage(null);
+    try {
+      await api('/auth/change-password', {
+        method: 'POST',
+        auth: true,
+        body: { currentPassword: pwCurrent, newPassword: pwNew },
+      });
+      setPwMessage('Contraseña actualizada. Si estabas en otro dispositivo, tendrás que volver a entrar.');
+      setPwCurrent('');
+      setPwNew('');
+    } catch (e) {
+      setPwError(e instanceof Error ? e.message : 'No se pudo cambiar la contraseña');
+    } finally {
+      setPwBusy(false);
+    }
+  }
+
+  return (
+    <Screen>
+      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+        <View style={styles.card}>
+          <Text style={styles.title}>{session.user.name}</Text>
+          <Text style={styles.muted}>{session.user.email}</Text>
+          <Text style={styles.muted}>Rol: {roleLabel}</Text>
+        </View>
+
+        {error && <Alert kind="error">{error}</Alert>}
+
+        {session.user.role === 'consumidor' && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Ser productor</Text>
+            <Text style={styles.muted}>
+              Publica y gestiona tus negocios y su catálogo. Un administrador revisará tu solicitud.
+            </Text>
+            {application === undefined && <Loading />}
+            {application === null && (
+              <Button
+                title={busy ? 'Enviando…' : 'Solicitar ser productor'}
+                onPress={() => void requestProducer()}
+                disabled={busy}
+              />
+            )}
+            {application !== null && application !== undefined && (
+              <>
+                <Text style={styles.muted}>Estado: {STATUS_LABEL[application.status]}</Text>
+                {application.status === 'rejected' && (
+                  <Button title="Volver a solicitar" onPress={() => void requestProducer()} disabled={busy} />
+                )}
+                {application.status === 'approved' && (
+                  <Text style={styles.muted}>
+                    Ya eres productor. Ve a <Link href="/my-businesses">Mis negocios</Link>.
+                  </Text>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {session.user.role === 'administrador' && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Administración</Text>
+            <Text style={styles.muted}>Solicitudes, usuarios, categorías y negocios.</Text>
+            <Button
+              title="Abrir panel de administración"
+              onPress={() => router.push('/admin')}
+            />
+          </View>
+        )}
+
+        {session.user.role === 'productor' && (
+          <Text style={styles.muted}>
+            Gestiona tus negocios en <Link href="/my-businesses">Mis negocios</Link>.
+          </Text>
+        )}
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Cambiar contraseña</Text>
+          {pwMessage && <Alert kind="success">{pwMessage}</Alert>}
+          {pwError && <Alert kind="error">{pwError}</Alert>}
+          <TextField
+            label="Contraseña actual"
+            secureTextEntry
+            autoComplete="current-password"
+            value={pwCurrent}
+            onChangeText={setPwCurrent}
+          />
+          <TextField
+            label="Nueva contraseña"
+            secureTextEntry
+            autoComplete="new-password"
+            value={pwNew}
+            onChangeText={setPwNew}
+          />
+          <Button
+            title={pwBusy ? 'Guardando…' : 'Actualizar contraseña'}
+            onPress={() => void changePassword()}
+            disabled={pwBusy}
+          />
+        </View>
+
+        <Button variant="ghost" title="Salir" onPress={() => void logout().then(() => router.replace('/'))} />
+      </ScrollView>
+    </Screen>
+  );
+}
+
+const styles = {
+  card: {
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  muted: {
+    color: COLORS.muted,
+    marginTop: 4,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+} as const;

@@ -1,0 +1,46 @@
+import { z } from 'zod';
+import type { Role } from './index.js';
+
+export const registerSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  email: z.email('Correo inválido').max(255),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+});
+
+export const loginSchema = z.object({
+  email: z.email('Correo inválido'),
+  password: z.string().min(1, 'Escribe tu contraseña'),
+});
+
+export const refreshSchema = z.object({
+  refreshToken: z.string().trim().min(1),
+});
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Escribe tu contraseña actual').max(72),
+    newPassword: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'La nueva contraseña debe ser diferente a la actual',
+    path: ['newPassword'],
+  });
+
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type RefreshInput = z.infer<typeof refreshSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export type SafeUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  createdAt: string;
+};
+
+export type AuthResponse = {
+  accessToken: string;
+  refreshToken: string;
+  user: SafeUser;
+};

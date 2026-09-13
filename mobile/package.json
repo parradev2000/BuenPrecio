@@ -1,0 +1,39 @@
+{
+  "name": "@buenprecio/mobile",
+  "version": "0.0.1",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "build": "expo export"
+  },
+  "dependencies": {
+    "@buenprecio/shared": "*",
+    "@expo/vector-icons": "^15.1.1",
+    "expo": "~57.0.21",
+    "expo-constants": "~57.0.17",
+    "expo-file-system": "~57.0.6",
+    "expo-image-loader": "~57.0.1",
+    "expo-image-picker": "~57.0.16",
+    "expo-linking": "~57.0.9",
+    "expo-location": "~57.0.17",
+    "expo-router": "~57.0.20",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-web": "~0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "eslint": "^9.34.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.3.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.44.1"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "buenprecio",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "api",
+    "web",
+    "mobile",
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "npm run build:shared",
+    "build:shared": "npm run build -w @buenprecio/shared",
+    "dev:shared": "npm run dev -w @buenprecio/shared",
+    "dev:api": "npm run dev -w @buenprecio/api",
+    "dev:web": "npm run dev -w @buenprecio/web",
+    "dev:mobile": "cd mobile && npx expo start",
+    "typecheck": "npm run typecheck -w @buenprecio/shared && npm run typecheck -w @buenprecio/api && npm run typecheck -w @buenprecio/web && npm run typecheck:mobile",
+    "typecheck:mobile": "cd mobile && tsc --noEmit",
+    "lint": "npm run lint -w @buenprecio/api && npm run lint -w @buenprecio/web && npm run lint:mobile",
+    "lint:mobile": "cd mobile && eslint .",
+    "test": "npm run test -w @buenprecio/api",
+    "build:web": "npm run build -w @buenprecio/web"
+  }
+}

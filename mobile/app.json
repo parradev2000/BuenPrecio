@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Buen Precio",
+    "slug": "buenprecio",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "buenprecio",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permitir a Buen Precio usar tu ubicación para completar la dirección de tu negocio."
+        }
+      ]
+    ],
+    "extra": {
+      "apiBase": "http://192.168.133.84:3000/api/v1"
+    }
+  }
+}

@@ -1,0 +1,98 @@
+import { API_BASE } from '../config';
+export { API_BASE };
+
+export type ItemUnit = 'unidad' | 'kg' | 'litro' | 'paquete';
+export type ItemType = 'producto' | 'servicio';
+export type CategoryKind = 'negocio' | 'item';
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected';
+
+export type CatalogBusiness = {
+  id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  photoUrl: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  itemsCount: number;
+};
+
+export type PublicItem = {
+  id: string;
+  type: ItemType;
+  name: string;
+  description: string | null;
+  price: number;
+  unit: ItemUnit | null;
+  photoUrl: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+};
+
+export type Business = {
+  id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  categoryId: string | null;
+  active: boolean;
+  itemsCount?: number;
+};
+
+export type BusinessItem = {
+  id: string;
+  businessId: string;
+  type: ItemType;
+  name: string;
+  description: string | null;
+  price: number;
+  unit: ItemUnit | null;
+  photoUrl: string | null;
+  available: boolean;
+};
+
+export type Category = {
+  id: string;
+  name: string;
+  kind: CategoryKind;
+};
+
+export type Application = {
+  id: string;
+  status: ApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+};
+
+export type UserRole = 'consumidor' | 'productor' | 'administrador';
+export type UserStatus = 'active' | 'suspended';
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+};
+
+export type AdminApplication = {
+  id: string;
+  status: ApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  userName: string;
+  userEmail: string;
+};
+
+export type AdminBusiness = {
+  id: string;
+  name: string;
+  address: string | null;
+  active: boolean;
+  itemsCount: number;
+  ownerName: string;
+  ownerEmail: string;
+};

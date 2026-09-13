@@ -1,0 +1,114 @@
+export type RoleName = 'consumidor' | 'productor' | 'administrador';
+export type ItemUnit = 'unidad' | 'kg' | 'litro' | 'paquete';
+export type CategoryKind = 'negocio' | 'item';
+export type UserStatus = 'active' | 'suspended';
+export type ItemType = 'producto' | 'servicio';
+
+export type CatalogBusiness = {
+  id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  photoUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  itemsCount: number;
+};
+
+export type PublicItem = {
+  id: string;
+  type: ItemType;
+  name: string;
+  description: string | null;
+  price: number;
+  unit: ItemUnit | null;
+  photoUrl: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+};
+
+export type CatalogBusinessDetail = CatalogBusiness & { items: PublicItem[] };
+
+export type Business = {
+  id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  photoUrl: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  itemsCount?: number;
+};
+
+export type BusinessItem = {
+  id: string;
+  businessId: string;
+  type: ItemType;
+  name: string;
+  description: string | null;
+  price: number;
+  unit: ItemUnit | null;
+  photoUrl: string | null;
+  categoryId: string | null;
+  available: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Category = {
+  id: string;
+  name: string;
+  kind: CategoryKind;
+  createdAt: string;
+};
+
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected';
+
+export type Application = {
+  id: string;
+  status: ApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+};
+
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: RoleName;
+  status: UserStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminApplicationRow = {
+  id: string;
+  status: ApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  userName: string;
+  userEmail: string;
+};
+
+export type AdminBusiness = {
+  id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  categoryId: string | null;
+  active: boolean;
+  createdAt: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  itemsCount: number;
+};

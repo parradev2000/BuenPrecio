@@ -1,0 +1,2 @@
+export const TEST_DATABASE_URL = 'postgresql://buenprecio:buenprecio_dev@localhost:5432/buenprecio_test';
+export const ADMIN_DATABASE_URL = 'postgresql://buenprecio:buenprecio_dev@localhost:5432/postgres';
