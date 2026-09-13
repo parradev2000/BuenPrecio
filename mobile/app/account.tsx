@@ -148,6 +148,15 @@ export default function AccountScreen() {
         )}
 
         <View style={styles.card}>
+          <Text style={styles.cardTitle}>Servidor</Text>
+          <Text style={styles.muted}>
+            ¿La app no se conecta? Cambia aquí la dirección de la API (por si
+            cambió la IP de tu red) sin recompilar.
+          </Text>
+          <Button title="Configurar servidor" onPress={() => router.push('/servidor')} />
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Cambiar contraseña</Text>
           {pwMessage && <Alert kind="success">{pwMessage}</Alert>}
           {pwError && <Alert kind="error">{pwError}</Alert>}
