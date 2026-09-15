@@ -13,9 +13,10 @@ export default function RootLayout() {
           headerTitleStyle: { fontWeight: '700' },
           headerStyle: { backgroundColor: '#fff' },
           contentStyle: { backgroundColor: COLORS.bg },
+          headerRight: () => <AccountHeaderButton />,
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Buen Precio', headerRight: () => <AccountHeaderButton /> }} />
+        <Stack.Screen name="index" options={{ title: 'Buen Precio' }} />
         <Stack.Screen name="login" options={{ title: 'Entrar' }} />
         <Stack.Screen name="register" options={{ title: 'Crear cuenta' }} />
         <Stack.Screen name="account" options={{ title: 'Mi cuenta' }} />

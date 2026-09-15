@@ -7,11 +7,10 @@ Este repositorio (v2) es un monorepo con una API REST en Fastify + PostgreSQL, u
 ## Estructura del monorepo
 
 ```
-├── api/                  API REST (Fastify, Drizzle ORM, PostgreSQL)
+├── api/                  API REST (Fastify, Drizzle ORM, PostgreSQL) + docker-compose.yml
 ├── web/                  Cliente web (Vite + React + react-router)
-├── mobile/               App móvil (Expo SDK 57 + expo-router)
+├── mobile/               App móvil (Expo SDK 57 + expo-router) + comando-apk.sh
 ├── packages/shared/      Schemas Zod y constantes compartidas (compila a dist/)
-├── docker-compose.yml    PostgreSQL local para desarrollo
 └── uploads/              Media subida por los productores (ignorada por git)
 ```
 
@@ -38,7 +37,7 @@ Este repositorio (v2) es un monorepo con una API REST en Fastify + PostgreSQL, u
 ### 1. Base de datos
 
 ```bash
-docker compose up -d
+cd api && docker compose up -d
 ```
 
 Levanta PostgreSQL 16 en el puerto `5433` (usuario/contraseña/db: `buenprecio`).

@@ -54,12 +54,12 @@ eas_setup() {
   command -v eas >/dev/null 2>&1 || die "eas-cli no está instalado"
   eas login || die "login falló — ¿usuario/clave correctos?"
   say "Vinculando proyecto a tu cuenta (genera projectId)"
-  (cd "$ROOT/mobile" && eas init) || say "eas init advirtió; seguimos"
+  (cd "$ROOT" && eas init) || say "eas init advirtió; seguimos"
 }
 
 eas_build() {
   say "BUILD APK final (EAS, ~15-25 min) — esto es lo importante: al terminar te dará un enlace .apk"
-  (cd "$ROOT/mobile" && eas build --platform android --profile preview --non-interactive) \
+  (cd "$ROOT" && eas build --platform android --profile preview --non-interactive) \
     || die "el build falló — pega la salida para depurarla"
 }
 
