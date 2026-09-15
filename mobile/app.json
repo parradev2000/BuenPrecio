@@ -11,7 +11,11 @@
       "supportsTablet": false
     },
     "android": {
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       [
@@ -23,7 +27,11 @@
     ],
     "extra": {
       "apiBase": "http://192.168.149.84:3000/api/v1",
-      "apiHost": "192.168.149.84"
-    }
+      "apiHost": "192.168.149.84",
+      "eas": {
+        "projectId": "95fb696a-90e5-403a-8fac-fd8c738705cc"
+      }
+    },
+    "owner": "aparra2000"
   }
 }
