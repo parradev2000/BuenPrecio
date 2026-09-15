@@ -11,6 +11,7 @@
       "supportsTablet": false
     },
     "android": {
+      "package": "com.buenprecio.app",
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
