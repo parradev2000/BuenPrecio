@@ -20,6 +20,7 @@
     "lint": "npm run lint -w @buenprecio/api && npm run lint -w @buenprecio/web && npm run lint:mobile",
     "lint:mobile": "cd mobile && eslint .",
     "test": "npm run test -w @buenprecio/api",
-    "build:web": "npm run build -w @buenprecio/web"
+    "build:web": "npm run build -w @buenprecio/web",
+    "build:prod": "npm run build:shared && npm run build:web"
   }
 }
