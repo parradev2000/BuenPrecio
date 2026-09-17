@@ -2,9 +2,12 @@ import { z } from 'zod';
 import type { Role } from './index.js';
 
 export const registerSchema = z.object({
-  name: z.string().trim().min(1).max(80),
-  email: z.email('Correo inválido').max(255),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+  name: z.string().trim().min(1, 'Escribe tu nombre').max(80, 'El nombre no puede superar 80 caracteres'),
+  email: z.email('Correo inválido').max(255, 'Correo demasiado largo'),
+  password: z
+    .string()
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+    .max(72, 'La contraseña no puede superar 72 caracteres'),
 });
 
 export const loginSchema = z.object({
@@ -18,8 +21,14 @@ export const refreshSchema = z.object({
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Escribe tu contraseña actual').max(72),
-    newPassword: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+    currentPassword: z
+      .string()
+      .min(1, 'Escribe tu contraseña actual')
+      .max(72, 'La contraseña no puede superar 72 caracteres'),
+    newPassword: z
+      .string()
+      .min(8, 'La contraseña debe tener al menos 8 caracteres')
+      .max(72, 'La contraseña no puede superar 72 caracteres'),
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
     message: 'La nueva contraseña debe ser diferente a la actual',

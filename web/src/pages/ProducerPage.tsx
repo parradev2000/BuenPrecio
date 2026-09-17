@@ -118,6 +118,11 @@ export function ProducerPage() {
   async function onPhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError('El archivo es demasiado grande (máximo 5 MB)');
+      event.target.value = '';
+      return;
+    }
     const body = new FormData();
     body.append('file', file);
     setPhotoUploading(true);
@@ -165,8 +170,8 @@ export function ProducerPage() {
         <form onSubmit={createBusiness} className="form card">
           <h2>Nuevo negocio</h2>
           {formError && <Alert kind="error">{formError}</Alert>}
-          <Field label="Nombre *" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Ej. Cafetería La Esquina" />
-          <Field label="Descripción" value={form.description} onChange={(e) => set('description', e.target.value)} />
+          <Field label="Nombre *" value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={200} placeholder="Ej. Cafetería La Esquina" />
+          <Field label="Descripción" value={form.description} onChange={(e) => set('description', e.target.value)} maxLength={500} />
           <label className="field">
             <span className="field-label">Foto del negocio</span>
             <input
@@ -183,7 +188,7 @@ export function ProducerPage() {
               <span className="muted">Foto cargada</span>
             </div>
           )}
-          <Field label="Dirección" value={form.address} onChange={(e) => set('address', e.target.value)} />
+          <Field label="Dirección" value={form.address} onChange={(e) => set('address', e.target.value)} maxLength={300} />
           <div className="map-actions">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowMap((v) => !v)}>
               {showMap ? 'Ocultar mapa' : 'Elegir en el mapa'}
@@ -198,7 +203,7 @@ export function ProducerPage() {
             </p>
           )}
           {showMap && <MapPicker onPick={(pick) => { set('address', pick.address); setCoords({ latitude: pick.latitude, longitude: pick.longitude }); setShowMap(false); }} />}
-          <Field label="Teléfono" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+          <Field label="Teléfono" value={form.phone} onChange={(e) => set('phone', e.target.value)} maxLength={30} />
           <label className="field">
             <span className="field-label">Tipo de negocio</span>
             <div className="inline-field">

@@ -7,13 +7,17 @@ export const photoUrlSchema = z
   .refine((value) => /^(https?:\/\/|\/)/i.test(value), 'URL de foto inválida');
 
 export const createBusinessSchema = z.object({
-  name: z.string().trim().min(1, 'Escribe el nombre del negocio').max(200),
-  description: z.string().trim().max(500).optional(),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Escribe el nombre del negocio')
+    .max(200, 'El nombre no puede superar 200 caracteres'),
+  description: z.string().trim().max(500, 'La descripción no puede superar 500 caracteres').optional(),
   categoryId: z.string().uuid('Tipo de negocio inválido').optional(),
-  address: z.string().trim().max(300).optional(),
-  phone: z.string().trim().max(30).optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
+  address: z.string().trim().max(300, 'La dirección no puede superar 300 caracteres').optional(),
+  phone: z.string().trim().max(30, 'El teléfono no puede superar 30 caracteres').optional(),
+  latitude: z.number().min(-90, 'Latitud inválida').max(90, 'Latitud inválida').optional(),
+  longitude: z.number().min(-180, 'Longitud inválida').max(180, 'Longitud inválida').optional(),
   photoUrl: photoUrlSchema.optional(),
 });
 
@@ -24,9 +28,16 @@ export const updateBusinessSchema = createBusinessSchema.partial().extend({
 export const createItemSchema = z
   .object({
     type: z.enum(['producto', 'servicio']),
-    name: z.string().trim().min(1, 'Escribe el nombre').max(200),
-    description: z.string().trim().max(500).optional(),
-    price: z.number().positive('El precio debe ser mayor a 0').max(999_999_999),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Escribe el nombre')
+      .max(200, 'El nombre no puede superar 200 caracteres'),
+    description: z.string().trim().max(500, 'La descripción no puede superar 500 caracteres').optional(),
+    price: z
+      .number()
+      .positive('El precio debe ser mayor a 0')
+      .max(999_999_999, 'El precio es demasiado alto'),
     unit: z.enum(ITEM_UNITS as unknown as [string, ...string[]]).optional(),
 photoUrl: photoUrlSchema.optional(),
 categoryId: z.string().uuid('Tipo de negocio inválido').optional(),
@@ -41,9 +52,18 @@ categoryId: z.string().uuid('Tipo de negocio inválido').optional(),
 export const updateItemSchema = z
   .object({
     type: z.enum(['producto', 'servicio']).optional(),
-    name: z.string().trim().min(1, 'Escribe el nombre').max(200).optional(),
-    description: z.string().trim().max(500).nullable().optional(),
-    price: z.number().positive('El precio debe ser mayor a 0').max(999_999_999).optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Escribe el nombre')
+      .max(200, 'El nombre no puede superar 200 caracteres')
+      .optional(),
+    description: z.string().trim().max(500, 'La descripción no puede superar 500 caracteres').nullable().optional(),
+    price: z
+      .number()
+      .positive('El precio debe ser mayor a 0')
+      .max(999_999_999, 'El precio es demasiado alto')
+      .optional(),
     unit: z.enum(ITEM_UNITS as unknown as [string, ...string[]]).nullable().optional(),
     photoUrl: photoUrlSchema.nullable().optional(),
     categoryId: z.string().uuid('Tipo de negocio inválido').nullable().optional(),

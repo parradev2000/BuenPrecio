@@ -31,6 +31,15 @@ export async function buildApp() {
   await mkdir(UPLOADS_DIR, { recursive: true });
   await app.register(fastifyStatic, { root: UPLOADS_DIR, prefix: '/uploads/' });
 
+  app.setErrorHandler((error, request, reply) => {
+    const status = error.statusCode ?? 500;
+    if (status === 413 || error.code === 'FST_REQ_FILE_TOO_LARGE') {
+      return reply.code(413).send({ message: 'El archivo es demasiado grande (máximo 5 MB)' });
+    }
+    request.log.error(error);
+    return reply.code(status).send({ message: error.message ?? 'Error inesperado' });
+  });
+
   app.get('/health', async () => {
     await checkDbConnection();
     return { status: 'ok' };

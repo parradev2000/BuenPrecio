@@ -119,6 +119,10 @@ export default function BusinessItemsScreen() {
         return;
       }
       const asset = result.assets[0];
+      if (asset.fileSize != null && asset.fileSize > 5 * 1024 * 1024) {
+        setError('El archivo es demasiado grande (máximo 5 MB)');
+        return;
+      }
       setPhotoPreview(asset.uri);
       setPhotoUploading(true);
       setError(null);

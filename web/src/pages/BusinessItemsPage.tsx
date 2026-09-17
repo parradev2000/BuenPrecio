@@ -113,6 +113,11 @@ export function BusinessItemsPage() {
   async function onPhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError('El archivo es demasiado grande (máximo 5 MB)');
+      event.target.value = '';
+      return;
+    }
     const body = new FormData();
     body.append('file', file);
     setPhotoUploading(true);
@@ -194,8 +199,8 @@ export function BusinessItemsPage() {
             </label>
           )}
         </div>
-        <Field label="Nombre *" value={form.name} onChange={(e) => setFormField('name', e.target.value)} placeholder="Ej. Café con leche" />
-        <Field label="Descripción" value={form.description} onChange={(e) => setFormField('description', e.target.value)} />
+        <Field label="Nombre *" value={form.name} onChange={(e) => setFormField('name', e.target.value)} maxLength={200} placeholder="Ej. Café con leche" />
+        <Field label="Descripción" value={form.description} onChange={(e) => setFormField('description', e.target.value)} maxLength={500} />
         <label className="field">
             <span className="field-label">Foto del producto</span>
             <input
