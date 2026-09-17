@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { api } from '../api/client';
+import type { AdminApplicationRow } from '../api/types';
 import { AdminBusinessesSection } from './admin/AdminBusinessesSection';
 import { AdminCategoriesSection } from './admin/AdminCategoriesSection';
 import { AdminUsersSection } from './admin/AdminUsersSection';
@@ -16,9 +18,23 @@ const TABS: { key: TabKey; label: string }[] = [
 
 export function AdminPage() {
   const [tab, setTab] = useState<TabKey>('aplicaciones');
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const refreshPending = useCallback(async () => {
+    try {
+      const res = await api<{ items: AdminApplicationRow[] }>('/admin/applications?status=pending', { auth: true });
+      setPendingCount(res.items.length);
+    } catch {
+      setPendingCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPending();
+  }, [refreshPending]);
 
   const content: Record<TabKey, ReactNode> = {
-    aplicaciones: <ApplicationsSection />,
+    aplicaciones: <ApplicationsSection onReviewed={() => void refreshPending()} />,
     usuarios: <AdminUsersSection />,
     categorias: <AdminCategoriesSection />,
     negocios: <AdminBusinessesSection />,
@@ -36,6 +52,7 @@ export function AdminPage() {
             onClick={() => setTab(t.key)}
           >
             {t.label}
+            {t.key === 'aplicaciones' && pendingCount > 0 && <span className="tab-count">{pendingCount}</span>}
           </button>
         ))}
       </div>

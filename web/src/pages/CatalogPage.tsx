@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { CatalogBusiness, Category } from '../api/types';
@@ -17,6 +17,7 @@ export function CatalogPage() {
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -27,7 +28,7 @@ export function CatalogPage() {
   }, [search, categoryId]);
 
   async function load() {
-    setLoading(true);
+    setLoading(!loadedRef.current);
     try {
       const [catalog, cats] = await Promise.all([
         api<{ items: CatalogBusiness[] }>(`/catalog?${new URLSearchParams({ search, categoryId })}`),
@@ -39,13 +40,26 @@ export function CatalogPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar el catálogo');
     } finally {
+      loadedRef.current = true;
       setLoading(false);
     }
   }
 
+  function clearFilters() {
+    setSearch('');
+    setCategoryId('');
+  }
+
   return (
     <div className="page">
-      <h1>Catálogo de negocios</h1>
+      <div className="page-header">
+        <h1>Catálogo de negocios</h1>
+        {(search || categoryId) && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
+            Limpiar filtros
+          </button>
+        )}
+      </div>
       <div className="filters">
         <Field
           label="Buscar"
@@ -70,11 +84,21 @@ export function CatalogPage() {
         </label>
       </div>
       {error && <p className="alert alert-error">{error}</p>}
-      {loading && <Loading />}
+      {!loading && businesses.length > 0 && (
+        <p className="result-count">
+          {businesses.length} {businesses.length === 1 ? 'negocio' : 'negocios'}
+        </p>
+      )}
+      {loading && businesses.length === 0 && <Loading />}
       {!loading && businesses.length === 0 && <EmptyState message="No hay negocios publicados todavía." />}
       <div className="grid">
         {businesses.map((b) => (
           <Link key={b.id} to={`/catalogo/${b.id}`} className="grid-item">
+            {b.photoUrl && (
+              <div className="grid-item-photo">
+                <img src={b.photoUrl} alt="" loading="lazy" decoding="async" />
+              </div>
+            )}
             <div className="grid-item-top">
               <span className="chip">{b.categoryName ?? 'General'}</span>
               <span className="muted">{b.itemsCount} producto{b.itemsCount === 1 ? '' : 's'}</span>

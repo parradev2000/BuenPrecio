@@ -23,6 +23,11 @@ export function Loading() {
   return <div className="loading">Cargando…</div>;
 }
 
-export function EmptyState({ message }: { message: string }) {
-  return <p className="empty">{message}</p>;
+export function EmptyState({ message, action }: { message: string; action?: ReactNode }) {
+  return (
+    <div className="empty">
+      {message}
+      {action && <div className="empty-action">{action}</div>}
+    </div>
+  );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Business, Category } from '../api/types';
@@ -15,8 +15,16 @@ export function ProducerPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', address: '', phone: '', categoryId: '' });
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    address: '',
+    phone: '',
+    categoryId: '',
+    photoUrl: '',
+  });
   const [formError, setFormError] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [showNewCat, setShowNewCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [catBusy, setCatBusy] = useState(false);
@@ -59,11 +67,12 @@ export function ProducerPage() {
       if (form.address) body.address = form.address;
       if (form.phone) body.phone = form.phone;
       if (form.categoryId) body.categoryId = form.categoryId;
+      if (form.photoUrl.trim()) body.photoUrl = form.photoUrl.trim();
       if (coords.latitude !== undefined) body.latitude = coords.latitude;
       if (coords.longitude !== undefined) body.longitude = coords.longitude;
       const res = await api<{ business: Business }>('/businesses', { method: 'POST', body, auth: true });
       setShowForm(false);
-      setForm({ name: '', description: '', address: '', phone: '', categoryId: '' });
+      setForm({ name: '', description: '', address: '', phone: '', categoryId: '', photoUrl: '' });
       setCoords({});
       setShowMap(false);
       navigate(`/mis-negocios/${res.business.id}`);
@@ -106,13 +115,39 @@ export function ProducerPage() {
     }
   }
 
+  async function onPhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const body = new FormData();
+    body.append('file', file);
+    setPhotoUploading(true);
+    setFormError(null);
+    try {
+      const res = await api<{ url: string }>('/uploads', { method: 'POST', body, auth: true });
+      set('photoUrl', res.url);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'No se pudo subir la foto');
+    } finally {
+      setPhotoUploading(false);
+      event.target.value = '';
+    }
+  }
+
   async function toggleActive(business: Business) {
-    await api(`/businesses/${business.id}`, {
-      method: business.active ? 'DELETE' : 'PATCH',
-      body: business.active ? undefined : { active: true },
-      auth: true,
-    });
-    await load();
+    if (business.active && !window.confirm(`¿Desactivar "${business.name}"? Dejará de verse en el catálogo.`)) {
+      return;
+    }
+    setFormError(null);
+    try {
+      await api(`/businesses/${business.id}`, {
+        method: business.active ? 'DELETE' : 'PATCH',
+        body: business.active ? undefined : { active: true },
+        auth: true,
+      });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo actualizar el negocio');
+    }
   }
 
   return (
@@ -132,6 +167,22 @@ export function ProducerPage() {
           {formError && <Alert kind="error">{formError}</Alert>}
           <Field label="Nombre *" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Ej. Cafetería La Esquina" />
           <Field label="Descripción" value={form.description} onChange={(e) => set('description', e.target.value)} />
+          <label className="field">
+            <span className="field-label">Foto del negocio</span>
+            <input
+              className="field-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(e) => void onPhotoChange(e)}
+            />
+            {photoUploading && <span className="field-error">Subiendo foto…</span>}
+          </label>
+          {!photoUploading && form.photoUrl && (
+            <div className="item-photo-content">
+              <img src={form.photoUrl} alt="" className="item-thumb" />
+              <span className="muted">Foto cargada</span>
+            </div>
+          )}
           <Field label="Dirección" value={form.address} onChange={(e) => set('address', e.target.value)} />
           <div className="map-actions">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowMap((v) => !v)}>
@@ -190,7 +241,16 @@ export function ProducerPage() {
       )}
 
       {loading && <Loading />}
-      {!loading && businesses.length === 0 && <EmptyState message="Aún no tienes negocios. ¡Crea el primero!" />}
+      {!loading && businesses.length === 0 && (
+        <EmptyState
+          message="Aún no tienes negocios. ¡Crea el primero!"
+          action={
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+              Crear negocio
+            </button>
+          }
+        />
+      )}
       <div className="grid">
         {businesses.map((b) => (
           <div key={b.id} className="grid-item">

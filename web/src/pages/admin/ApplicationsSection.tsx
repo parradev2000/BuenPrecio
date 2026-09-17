@@ -3,7 +3,7 @@ import { api } from '../../api/client';
 import type { AdminApplicationRow, ApplicationStatus } from '../../api/types';
 import { Alert, EmptyState, Loading } from '../../components/ui';
 
-export function ApplicationsSection() {
+export function ApplicationsSection({ onReviewed }: { onReviewed?: () => void }) {
   const [items, setItems] = useState<AdminApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +33,7 @@ export function ApplicationsSection() {
     try {
       await api(`/admin/applications/${id}/${action}`, { method: 'POST', auth: true });
       await load(filter);
+      onReviewed?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo procesar');
     } finally {

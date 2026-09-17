@@ -208,7 +208,7 @@ export function BusinessItemsPage() {
           </label>
           {!photoUploading && form.photoUrl && (
             <div className="item-photo-content">
-              <img src={form.photoUrl} alt="" className="item-thumb" />
+              <img src={form.photoUrl} alt="" className="item-thumb" decoding="async" />
               <span className="muted">Foto cargada</span>
             </div>
           )}
@@ -219,12 +219,30 @@ export function BusinessItemsPage() {
       </form>
 
       <h2 className="section-title">Catálogo actual</h2>
-      {items.length === 0 && <EmptyState message="Este negocio todavía no tiene productos." />}
+      {items.length === 0 && (
+        <EmptyState
+          message="Este negocio todavía no tiene productos."
+          action={
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                cancelEdit();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Agregar primer producto
+            </button>
+          }
+        />
+      )}
       <ul className="item-list">
         {items.map((item) => (
           <li key={item.id} className={`item-row${item.available ? '' : ' item-off'}`}>
             <div className={item.photoUrl ? 'item-photo-content' : undefined}>
-              {item.photoUrl && <img src={item.photoUrl} alt="" className="item-thumb" loading="lazy" />}
+              {item.photoUrl && (
+                <img src={item.photoUrl} alt="" className="item-thumb" loading="lazy" decoding="async" />
+              )}
               <div>
                 <div className="item-name">
                   {item.name}{' '}

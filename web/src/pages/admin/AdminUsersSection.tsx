@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
+import { ROLE_LABELS } from '@buenprecio/shared';
 import { api } from '../../api/client';
 import type { AdminUser, RoleName } from '../../api/types';
 import { Alert, EmptyState, Loading } from '../../components/ui';
 
 const ROLE_OPTIONS: RoleName[] = ['consumidor', 'productor', 'administrador'];
+
+const STATUS_LABEL: Record<AdminUser['status'], string> = {
+  active: 'Activo',
+  suspended: 'Suspendido',
+};
 
 export function AdminUsersSection() {
   const [items, setItems] = useState<AdminUser[]>([]);
@@ -75,7 +81,7 @@ export function AdminUsersSection() {
           <option value="">Todos los roles</option>
           {ROLE_OPTIONS.map((r) => (
             <option key={r} value={r}>
-              {r}
+              {ROLE_LABELS[r]}
             </option>
           ))}
         </select>
@@ -89,8 +95,8 @@ export function AdminUsersSection() {
             <div>
               <strong>{u.name}</strong> · {u.email}
               <p className="muted">
-                <span className={`chip ${u.status === 'suspended' ? 'chip-off' : ''}`}>{u.status}</span>{' '}
-                rol: {u.role}
+                <span className={`chip ${u.status === 'suspended' ? 'chip-off' : ''}`}>{STATUS_LABEL[u.status]}</span>{' '}
+                rol: {ROLE_LABELS[u.role]}
               </p>
             </div>
             <div className="item-row-actions">
@@ -102,7 +108,7 @@ export function AdminUsersSection() {
               >
                 {ROLE_OPTIONS.map((r) => (
                   <option key={r} value={r}>
-                    {r}
+                    {ROLE_LABELS[r]}
                   </option>
                 ))}
               </select>

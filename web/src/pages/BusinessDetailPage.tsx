@@ -37,11 +37,32 @@ export function BusinessDetailPage() {
       <Link to="/catalogo" className="back-link">
         ← Volver al catálogo
       </Link>
+      {business.photoUrl && (
+        <img src={business.photoUrl} alt={business.name} className="detail-photo" decoding="async" />
+      )}
       <h1>{business.name}</h1>
       <p className="muted">{business.categoryName ?? 'General'}</p>
       {business.description && <p>{business.description}</p>}
-      {business.address && <p className="muted">📍 {business.address}</p>}
-      {business.phone && <p className="muted">☎️ {business.phone}</p>}
+      {business.address && (
+        <p className="muted">
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              business.latitude && business.longitude
+                ? `${business.latitude},${business.longitude}`
+                : business.address,
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            📍 {business.address}
+          </a>
+        </p>
+      )}
+      {business.phone && (
+        <p className="muted">
+          <a href={`tel:${business.phone.replace(/[^+\d]/g, '')}`}>☎️ {business.phone}</a>
+        </p>
+      )}
 
       <h2 className="section-title">Productos y servicios</h2>
       {business.items.length === 0 && (
@@ -51,7 +72,9 @@ export function BusinessDetailPage() {
         {business.items.map((item) => (
           <li key={item.id} className="item-row">
             <div className={item.photoUrl ? 'item-photo-content' : undefined}>
-              {item.photoUrl && <img src={item.photoUrl} alt="" className="item-thumb" loading="lazy" />}
+              {item.photoUrl && (
+                <img src={item.photoUrl} alt="" className="item-thumb" loading="lazy" decoding="async" />
+              )}
               <div>
                 <div className="item-name">
                   {item.name}{' '}
