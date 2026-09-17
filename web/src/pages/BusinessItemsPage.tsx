@@ -86,7 +86,7 @@ export function BusinessItemsPage() {
       setEditing(null);
       await load();
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : 'No se pudo guardar el ítem');
+      setFormError(e instanceof Error ? e.message : 'No se pudo guardar el producto');
     } finally {
       setBusy(false);
     }
@@ -161,11 +161,11 @@ export function BusinessItemsPage() {
         ← Volver a mis negocios
       </Link>
       <h1>{business.name}</h1>
-      <p className="muted">{business.active ? 'Activo' : 'Desactivado'} · {items.length} ítem{items.length === 1 ? '' : 's'}</p>
+      <p className="muted">{business.active ? 'Activo' : 'Desactivado'} · {items.length} producto{items.length === 1 ? '' : 's'}</p>
 
       <form onSubmit={addItem} className="form card">
         <div className="form-header">
-          <h2>{editing ? 'Editar ítem' : 'Nuevo ítem'}</h2>
+          <h2>{editing ? 'Editar producto' : 'Nuevo producto'}</h2>
           {editing && (
             <button type="button" className="btn btn-secondary btn-sm" onClick={cancelEdit}>
               Cancelar edición
@@ -214,12 +214,12 @@ export function BusinessItemsPage() {
           )}
         <Field label="Precio (CUP) *" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setFormField('price', e.target.value)} />
         <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim() || !form.price}>
-          {busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar ítem'}
+          {busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar producto'}
         </button>
       </form>
 
       <h2 className="section-title">Catálogo actual</h2>
-      {items.length === 0 && <EmptyState message="Este negocio todavía no tiene ítems." />}
+      {items.length === 0 && <EmptyState message="Este negocio todavía no tiene productos." />}
       <ul className="item-list">
         {items.map((item) => (
           <li key={item.id} className={`item-row${item.available ? '' : ' item-off'}`}>

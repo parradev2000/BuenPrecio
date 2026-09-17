@@ -47,7 +47,7 @@ export function AdminUsersSection() {
   }
 
   async function remove(user: AdminUser) {
-    if (!window.confirm(`¿Eliminar a ${user.name} (${user.email})? Se borrarán sus negocios e ítems.`)) {
+    if (!window.confirm(`¿Eliminar a ${user.name} (${user.email})? Se borrarán sus negocios y productos.`)) {
       return;
     }
     setBusyId(user.id);

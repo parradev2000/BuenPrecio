@@ -48,7 +48,7 @@ export async function businessRoutes(app: FastifyInstance) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
     if (!(await categoryExists('negocio', parsed.data.categoryId))) {
-      return sendError(reply, 400, 'Categoría inválida');
+      return sendError(reply, 400, 'Tipo de negocio inválido');
     }
     const values = pickDefined(parsed.data, ['description', 'categoryId', 'address', 'phone', 'latitude', 'longitude', 'photoUrl']);
     const [business] = await db
@@ -113,7 +113,7 @@ export async function businessRoutes(app: FastifyInstance) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
     if (!(await categoryExists('negocio', parsed.data.categoryId))) {
-      return sendError(reply, 400, 'Categoría inválida');
+      return sendError(reply, 400, 'Tipo de negocio inválido');
     }
     if (Object.keys(parsed.data).length === 0) {
       return sendError(reply, 400, 'No hay campos para actualizar');
@@ -148,7 +148,7 @@ export async function businessRoutes(app: FastifyInstance) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
     if (!(await categoryExists('item', parsed.data.categoryId))) {
-      return sendError(reply, 400, 'Categoría inválida');
+      return sendError(reply, 400, 'Tipo de negocio inválido');
     }
     const values = pickDefined(parsed.data, ['description', 'unit', 'photoUrl', 'categoryId', 'available']);
     const [item] = await db
@@ -173,7 +173,7 @@ export async function businessRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const item = await db.query.businessItems.findFirst({ where: eq(businessItems.id, id) });
     if (!item) {
-      return sendError(reply, 404, 'Ítem no encontrado');
+      return sendError(reply, 404, 'Producto no encontrado');
     }
     const business = await ownedBusiness(request, reply, item.businessId);
     if (!business) return;
@@ -182,7 +182,7 @@ export async function businessRoutes(app: FastifyInstance) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
     if (!(await categoryExists('item', parsed.data.categoryId ?? undefined))) {
-      return sendError(reply, 400, 'Categoría inválida');
+      return sendError(reply, 400, 'Tipo de negocio inválido');
     }
     if (Object.keys(parsed.data).length === 0) {
       return sendError(reply, 400, 'No hay campos para actualizar');
@@ -200,7 +200,7 @@ export async function businessRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const item = await db.query.businessItems.findFirst({ where: eq(businessItems.id, id) });
     if (!item) {
-      return sendError(reply, 404, 'Ítem no encontrado');
+      return sendError(reply, 404, 'Producto no encontrado');
     }
     const business = await ownedBusiness(request, reply, item.businessId);
     if (!business) return;

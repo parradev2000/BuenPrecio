@@ -88,7 +88,7 @@ export default function CatalogScreen() {
               <View style={styles.cardTop}>
                 <Text style={styles.chipText}>{item.categoryName ?? 'General'}</Text>
                 <Text style={styles.muted}>
-                  {item.itemsCount} ítem{item.itemsCount === 1 ? '' : 's'}
+                  {item.itemsCount} producto{item.itemsCount === 1 ? '' : 's'}
                 </Text>
               </View>
               <Text style={styles.cardTitle}>{item.name}</Text>

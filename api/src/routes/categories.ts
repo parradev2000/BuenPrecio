@@ -36,7 +36,7 @@ export async function categoryRoutes(app: FastifyInstance) {
         and(eq(categories.kind, parsed.data.kind), eq(categories.name, parsed.data.name)),
     });
     if (existing) {
-      return sendError(reply, 409, 'La categoría ya existe');
+      return sendError(reply, 409, 'El tipo de negocio ya existe');
     }
     const [category] = await db.insert(categories).values(parsed.data).returning();
     return reply.code(201).send({ category });
@@ -50,11 +50,11 @@ export async function categoryRoutes(app: FastifyInstance) {
     }
     const target = await db.query.categories.findFirst({ where: eq(categories.id, id) });
     if (!target) {
-      return sendError(reply, 404, 'Categoría no encontrada');
+      return sendError(reply, 404, 'Tipo de negocio no encontrado');
     }
     const values = parsed.data;
     if (values.kind && values.kind !== target.kind && (await isInUse(target.id))) {
-      return sendError(reply, 409, 'La categoría está en uso y no puede cambiar de tipo');
+      return sendError(reply, 409, 'El tipo de negocio está en uso y no puede cambiar de tipo');
     }
     const [updated] = await db
       .update(categories)
@@ -68,10 +68,10 @@ export async function categoryRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const target = await db.query.categories.findFirst({ where: eq(categories.id, id) });
     if (!target) {
-      return sendError(reply, 404, 'Categoría no encontrada');
+      return sendError(reply, 404, 'Tipo de negocio no encontrado');
     }
     if (await isInUse(target.id)) {
-      return sendError(reply, 409, 'La categoría está en uso');
+      return sendError(reply, 409, 'El tipo de negocio está en uso');
     }
     await db.delete(categories).where(eq(categories.id, target.id));
     return reply.code(204).send();

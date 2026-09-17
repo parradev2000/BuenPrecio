@@ -84,7 +84,7 @@ export default function BusinessItemsScreen() {
       setFormOpen(false);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar el ítem');
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el producto');
     } finally {
       setBusy(false);
     }
@@ -161,7 +161,7 @@ export default function BusinessItemsScreen() {
         </Text>
       )}
       <Button
-        title={formOpen ? 'Cancelar' : '+ Nuevo ítem'}
+        title={formOpen ? 'Cancelar' : '+ Nuevo producto'}
         variant={formOpen ? 'ghost' : 'primary'}
         onPress={() => {
           setFormOpen((v) => !v);
@@ -235,7 +235,7 @@ export default function BusinessItemsScreen() {
             ) : null}
           </View>
           <Button
-            title={busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar ítem'}
+            title={busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar producto'}
             onPress={() => void addItem()}
             disabled={busy}
           />
@@ -245,7 +245,7 @@ export default function BusinessItemsScreen() {
       {loading ? (
         <Loading />
       ) : items.length === 0 ? (
-        <EmptyState message="Este negocio todavía no tiene ítems." />
+        <EmptyState message="Este negocio todavía no tiene productos." />
       ) : (
         <FlatList
           data={items}

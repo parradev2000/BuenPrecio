@@ -15,13 +15,13 @@ export const updateUserSchema = z
   });
 
 export const createCategorySchema = z.object({
-  name: z.string().trim().min(1, 'Escribe el nombre de la categoría').max(100),
+  name: z.string().trim().min(1, 'Escribe el nombre del tipo de negocio').max(100),
   kind: z.enum(['negocio', 'item'], { message: 'kind inválido' }),
 });
 
 export const updateCategorySchema = z
   .object({
-    name: z.string().trim().min(1, 'Escribe el nombre de la categoría').max(100).optional(),
+    name: z.string().trim().min(1, 'Escribe el nombre del tipo de negocio').max(100).optional(),
     kind: z.enum(['negocio', 'item']).optional(),
   })
   .superRefine((data, ctx) => {

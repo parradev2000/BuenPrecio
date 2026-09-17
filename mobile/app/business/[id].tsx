@@ -45,7 +45,7 @@ export default function BusinessDetailScreen() {
   return (
     <Screen>
       <Text style={styles.title}>{business.name}</Text>
-      <Text style={styles.muted}>{business.categoryName ?? 'Categoría general'}</Text>
+      <Text style={styles.muted}>{business.categoryName ?? 'General'}</Text>
       {business.description ? <Text style={styles.body}>{business.description}</Text> : null}
       {business.address ? <Text style={styles.muted}>📍 {business.address}</Text> : null}
       {business.phone ? <Text style={styles.muted}>☎️ {business.phone}</Text> : null}

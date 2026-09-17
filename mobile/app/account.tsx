@@ -133,7 +133,7 @@ export default function AccountScreen() {
         {session.user.role === 'administrador' && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Administración</Text>
-            <Text style={styles.muted}>Solicitudes, usuarios, categorías y negocios.</Text>
+            <Text style={styles.muted}>Solicitudes, usuarios y negocios.</Text>
             <Button
               title="Abrir panel de administración"
               onPress={() => router.push('/admin')}

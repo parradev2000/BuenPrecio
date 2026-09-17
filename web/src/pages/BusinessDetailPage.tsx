@@ -38,7 +38,7 @@ export function BusinessDetailPage() {
         ← Volver al catálogo
       </Link>
       <h1>{business.name}</h1>
-      <p className="muted">{business.categoryName ?? 'Categoría general'}</p>
+      <p className="muted">{business.categoryName ?? 'General'}</p>
       {business.description && <p>{business.description}</p>}
       {business.address && <p className="muted">📍 {business.address}</p>}
       {business.phone && <p className="muted">☎️ {business.phone}</p>}

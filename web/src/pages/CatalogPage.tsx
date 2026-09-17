@@ -9,7 +9,7 @@ export function CatalogPage() {
   useSeo({
     title: 'Catálogo de negocios - Buen Precio',
     description:
-      'Explora negocios locales, sus productos y servicios, con precios visibles y categorías claras para comparar mejor.',
+      'Explora negocios locales, sus productos y servicios, con precios visibles y tipos de negocio claros para comparar mejor.',
   });
   const [businesses, setBusinesses] = useState<CatalogBusiness[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -54,7 +54,7 @@ export function CatalogPage() {
           placeholder="Nombre del negocio…"
         />
         <label className="field">
-          <span className="field-label">Categoría</span>
+          <span className="field-label">Tipo de negocio</span>
           <select
             className="field-input"
             value={categoryId}
@@ -77,7 +77,7 @@ export function CatalogPage() {
           <Link key={b.id} to={`/catalogo/${b.id}`} className="grid-item">
             <div className="grid-item-top">
               <span className="chip">{b.categoryName ?? 'General'}</span>
-              <span className="muted">{b.itemsCount} ítem{b.itemsCount === 1 ? '' : 's'}</span>
+              <span className="muted">{b.itemsCount} producto{b.itemsCount === 1 ? '' : 's'}</span>
             </div>
             <h2>{b.name}</h2>
             {b.description && <p className="muted">{b.description}</p>}

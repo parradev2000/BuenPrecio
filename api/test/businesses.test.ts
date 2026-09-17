@@ -230,7 +230,7 @@ describe('negocios (productor)', () => {
       payload: { name: 'Tienda', categoryId: itemCategory.id },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().message).toBe('Categoría inválida');
+    expect(res.json().message).toBe('Tipo de negocio inválido');
   });
 
   it('guarda coordenadas al crear y actualizar', async () => {

@@ -34,7 +34,7 @@ const HOME_VIEW: SeoView = {
 const CATALOG_VIEW: SeoView = {
   title: 'Catálogo de negocios - Buen Precio',
   description:
-    'Explora negocios locales, sus productos y servicios, con precios visibles y categorías claras para comparar mejor.',
+    'Explora negocios locales, sus productos y servicios, con precios visibles y tipos de negocio claros para comparar mejor.',
   url: `${SITE_URL}/catalogo`,
   jsonLd: DEFAULT_ORG,
 };

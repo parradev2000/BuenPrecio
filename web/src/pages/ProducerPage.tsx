@@ -149,10 +149,10 @@ export function ProducerPage() {
           {showMap && <MapPicker onPick={(pick) => { set('address', pick.address); setCoords({ latitude: pick.latitude, longitude: pick.longitude }); setShowMap(false); }} />}
           <Field label="Teléfono" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
           <label className="field">
-            <span className="field-label">Categoría</span>
+            <span className="field-label">Tipo de negocio</span>
             <div className="inline-field">
               <select className="field-input" value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)}>
-                <option value="">Sin categoría</option>
+                <option value="">Sin tipo de negocio</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -167,7 +167,7 @@ export function ProducerPage() {
           {showNewCat && (
             <div className="inline-field">
               <Field
-                label="Nueva categoría"
+                label="Nuevo tipo de negocio"
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
                 placeholder="Ej. Panadería"
@@ -197,7 +197,7 @@ export function ProducerPage() {
             <span className={`chip ${b.active ? '' : 'chip-off'}`}>{b.active ? 'Activo' : 'Desactivado'}</span>
             <h2>{b.name}</h2>
             {b.address && <p className="muted">{b.address}</p>}
-            <p className="muted">{b.itemsCount ?? 0} ítem{b.itemsCount === 1 ? '' : 's'}</p>
+            <p className="muted">{b.itemsCount ?? 0} producto{b.itemsCount === 1 ? '' : 's'}</p>
             <div className="row-actions">
               <Link to={`/mis-negocios/${b.id}`} className="btn btn-secondary btn-sm">
                 Gestionar

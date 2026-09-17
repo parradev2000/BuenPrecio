@@ -32,7 +32,7 @@ export function HomePage() {
       <section className="cards">
         <div className="card">
           <h2>Para consumidores</h2>
-          <p>Consulta productos y servicios de negocios por categoría, con sus precios en CUP.</p>
+          <p>Consulta productos y servicios de negocios por tipo de negocio, con sus precios en CUP.</p>
         </div>
         <div className="card">
           <h2>Para productores</h2>
@@ -40,7 +40,7 @@ export function HomePage() {
         </div>
         <div className="card">
           <h2>Transparencia</h2>
-          <p>Una misma moneda, precios visibles y categorías claras para comparar mejor.</p>
+          <p>Una misma moneda, precios visibles y tipos de negocio claros para comparar mejor.</p>
         </div>
       </section>
     </div>

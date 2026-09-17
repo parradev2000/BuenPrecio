@@ -51,7 +51,7 @@ export function AdminBusinessesSection() {
               <strong>{b.name}</strong>{' '}
               <span className={`chip ${b.active ? '' : 'chip-off'}`}>{b.active ? 'activo' : 'inactivo'}</span>
               <p className="muted">
-                {b.ownerName} · {b.ownerEmail} · {b.itemsCount} ítem{b.itemsCount === 1 ? '' : 's'}
+                {b.ownerName} · {b.ownerEmail} · {b.itemsCount} producto{b.itemsCount === 1 ? '' : 's'}
                 {b.address ? ` · ${b.address}` : ''}
               </p>
             </div>

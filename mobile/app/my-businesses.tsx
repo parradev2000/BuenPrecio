@@ -108,7 +108,7 @@ export default function MyBusinessesScreen() {
       setShowNewCat(false);
       setNewCatName('');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo crear la categoría');
+      setError(e instanceof Error ? e.message : 'No se pudo crear el tipo de negocio');
     } finally {
       setBusy(false);
     }
@@ -149,13 +149,13 @@ export default function MyBusinessesScreen() {
               Ubicación fijada ({coords.latitude?.toFixed(4)}, {coords.longitude?.toFixed(4)})
             </Text>
           )}
-          <Text style={styles.label}>Categoría</Text>
+          <Text style={styles.label}>Tipo de negocio</Text>
           <View style={styles.chips}>
             <Pressable
               style={[styles.chip, categoryId === '' && styles.chipActive]}
               onPress={() => setCategoryId('')}
             >
-              <Text style={[styles.chipText, categoryId === '' && styles.chipTextActive]}>Sin categoría</Text>
+              <Text style={[styles.chipText, categoryId === '' && styles.chipTextActive]}>Sin tipo de negocio</Text>
             </Pressable>
             {categories.map((c) => (
               <Pressable
@@ -179,13 +179,13 @@ export default function MyBusinessesScreen() {
           {showNewCat && (
             <>
               <TextField
-                label="Nueva categoría"
+                label="Nuevo tipo de negocio"
                 value={newCatName}
                 onChangeText={setNewCatName}
                 placeholder="Ej. Panadería"
               />
               <Button
-                title={busy ? 'Creando…' : 'Crear categoría'}
+                title={busy ? 'Creando…' : 'Crear tipo de negocio'}
                 variant="secondary"
                 onPress={() => void createCategory()}
                 disabled={busy || !newCatName.trim()}
@@ -219,7 +219,7 @@ export default function MyBusinessesScreen() {
               </View>
               {item.address ? <Text style={styles.muted}>{item.address}</Text> : null}
               <Text style={styles.muted}>
-                {item.itemsCount ?? 0} ítem{item.itemsCount === 1 ? '' : 's'}
+                {item.itemsCount ?? 0} producto{item.itemsCount === 1 ? '' : 's'}
               </Text>
               <View style={styles.rowActions}>
                 <Pressable style={styles.smallBtn} onPress={() => router.push(`/my-businesses/${item.id}`)}>

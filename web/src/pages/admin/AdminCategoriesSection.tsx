@@ -44,7 +44,7 @@ export function AdminCategoriesSection() {
   }
 
   async function remove(category: Category) {
-    if (!window.confirm(`¿Eliminar la categoría "${category.name}"?`)) {
+    if (!window.confirm(`¿Eliminar el tipo de negocio "${category.name}"?`)) {
       return;
     }
     setError(null);
@@ -59,7 +59,7 @@ export function AdminCategoriesSection() {
   return (
     <section>
       <form onSubmit={create} className="form card">
-        <h2>Nueva categoría</h2>
+        <h2>Nuevo tipo de negocio</h2>
         {formError && <Alert kind="error">{formError}</Alert>}
         <div className="form-row">
           <Field label="Nombre *" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
@@ -67,23 +67,23 @@ export function AdminCategoriesSection() {
             <span className="field-label">Tipo</span>
             <select className="field-input" value={form.kind} onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as CategoryKind }))}>
               <option value="negocio">Negocio</option>
-              <option value="item">Ítem</option>
+              <option value="item">Producto</option>
             </select>
           </label>
         </div>
         <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim()}>
-          {busy ? 'Creando…' : 'Crear categoría'}
+          {busy ? 'Creando…' : 'Crear tipo de negocio'}
         </button>
       </form>
 
       {error && <Alert kind="error">{error}</Alert>}
       {loading && <Loading />}
-      {!loading && items.length === 0 && <EmptyState message="No hay categorías creadas." />}
+      {!loading && items.length === 0 && <EmptyState message="No hay tipos de negocio creados." />}
       <ul className="item-list">
         {items.map((c) => (
           <li key={c.id} className="item-row">
             <div>
-              <strong>{c.name}</strong> <span className="chip">{c.kind}</span>
+              <strong>{c.name}</strong> <span className="chip">{c.kind === 'negocio' ? 'Negocio' : 'Producto'}</span>
               <p className="muted">Creada el {new Date(c.createdAt).toLocaleDateString('es-CU')}</p>
             </div>
             <button type="button" className="btn btn-danger btn-sm" onClick={() => void remove(c)}>

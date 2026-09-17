@@ -9,7 +9,7 @@ export const photoUrlSchema = z
 export const createBusinessSchema = z.object({
   name: z.string().trim().min(1, 'Escribe el nombre del negocio').max(200),
   description: z.string().trim().max(500).optional(),
-  categoryId: z.string().uuid('Categoría inválida').optional(),
+  categoryId: z.string().uuid('Tipo de negocio inválido').optional(),
   address: z.string().trim().max(300).optional(),
   phone: z.string().trim().max(30).optional(),
   latitude: z.number().min(-90).max(90).optional(),
@@ -29,7 +29,7 @@ export const createItemSchema = z
     price: z.number().positive('El precio debe ser mayor a 0').max(999_999_999),
     unit: z.enum(ITEM_UNITS as unknown as [string, ...string[]]).optional(),
 photoUrl: photoUrlSchema.optional(),
-    categoryId: z.string().uuid('Categoría inválida').optional(),
+categoryId: z.string().uuid('Tipo de negocio inválido').optional(),
     available: z.boolean().default(true),
   })
   .superRefine((data, ctx) => {
@@ -46,7 +46,7 @@ export const updateItemSchema = z
     price: z.number().positive('El precio debe ser mayor a 0').max(999_999_999).optional(),
     unit: z.enum(ITEM_UNITS as unknown as [string, ...string[]]).nullable().optional(),
     photoUrl: photoUrlSchema.nullable().optional(),
-    categoryId: z.string().uuid('Categoría inválida').nullable().optional(),
+    categoryId: z.string().uuid('Tipo de negocio inválido').nullable().optional(),
     available: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {

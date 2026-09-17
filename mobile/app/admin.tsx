@@ -20,7 +20,7 @@ type TabId = 'applications' | 'users' | 'categories' | 'businesses';
 const TABS: { id: TabId; label: string }[] = [
   { id: 'applications', label: 'Solicitudes' },
   { id: 'users', label: 'Usuarios' },
-  { id: 'categories', label: 'Categorías' },
+  { id: 'categories', label: 'Tipos de negocio' },
   { id: 'businesses', label: 'Negocios' },
 ];
 
@@ -131,7 +131,7 @@ function ApplicationsTab() {
       {loading ? (
         <Loading />
       ) : items.length === 0 ? (
-        <EmptyState message="No hay solicitudes en esta categoría." />
+        <EmptyState message="No hay solicitudes en este estado." />
       ) : (
         <FlatList
           data={items}
@@ -216,7 +216,7 @@ function UsersTab() {
   }
 
   async function remove(user: User) {
-    NativeAlert.alert('Eliminar usuario', `¿Eliminar a ${user.name} (${user.email})? Se borrarán sus negocios e ítems.`, [
+    NativeAlert.alert('Eliminar usuario', `¿Eliminar a ${user.name} (${user.email})? Se borrarán sus negocios y productos.`, [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Eliminar', style: 'destructive', onPress: () => void doRemove(user) },
     ]);
@@ -365,29 +365,29 @@ function CategoriesTab() {
 
   return (
     <ScrollView style={styles.body} contentContainerStyle={styles.list}>
-      <Text style={styles.sectionTitle}>Nueva categoría</Text>
+      <Text style={styles.sectionTitle}>Nuevo tipo de negocio</Text>
       <TextField label="Nombre" value={name} onChangeText={setName} placeholder="Ej. Panadería" />
       <View style={styles.chips}>
         <Pressable style={[styles.chip, kind === 'negocio' && styles.chipActive]} onPress={() => setKind('negocio')}>
           <Text style={[styles.chipText, kind === 'negocio' && styles.chipTextActive]}>Negocio</Text>
         </Pressable>
         <Pressable style={[styles.chip, kind === 'item' && styles.chipActive]} onPress={() => setKind('item')}>
-          <Text style={[styles.chipText, kind === 'item' && styles.chipTextActive]}>Ítem</Text>
+          <Text style={[styles.chipText, kind === 'item' && styles.chipTextActive]}>Producto</Text>
         </Pressable>
       </View>
-      <Button title={busy ? 'Guardando…' : 'Crear categoría'} onPress={() => void createCategory()} disabled={busy} />
+      <Button title={busy ? 'Guardando…' : 'Crear tipo de negocio'} onPress={() => void createCategory()} disabled={busy} />
       {error && <Alert kind="error">{error}</Alert>}
       <Text style={styles.sectionTitle}>Existentes</Text>
       {loading ? (
         <Loading />
       ) : items.length === 0 ? (
-        <EmptyState message="Sin categorías." />
+        <EmptyState message="Sin tipos de negocio." />
       ) : (
         items.map((c) => (
           <View key={c.id} style={styles.card}>
             <View style={styles.cardTop}>
               <Text style={styles.cardTitle}>{c.name}</Text>
-              <Text style={styles.muted}>{c.kind === 'negocio' ? 'negocio' : 'ítem'}</Text>
+              <Text style={styles.muted}>{c.kind === 'negocio' ? 'Negocio' : 'Producto'}</Text>
             </View>
             <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
           </View>
@@ -462,7 +462,7 @@ function BusinessesTab() {
                 {item.ownerName} ({item.ownerEmail})
               </Text>
               <Text style={styles.muted}>
-                {item.itemsCount} ítem{item.itemsCount === 1 ? '' : 's'}
+                {item.itemsCount} producto{item.itemsCount === 1 ? '' : 's'}
               </Text>
               <Button
                 title={item.active ? 'Desactivar' : 'Activar'}

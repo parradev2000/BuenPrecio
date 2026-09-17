@@ -10,7 +10,7 @@ type TabKey = 'aplicaciones' | 'usuarios' | 'categorias' | 'negocios';
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'aplicaciones', label: 'Solicitudes' },
   { key: 'usuarios', label: 'Usuarios' },
-  { key: 'categorias', label: 'Categorías' },
+  { key: 'categorias', label: 'Tipos de negocio' },
   { key: 'negocios', label: 'Negocios' },
 ];
 
