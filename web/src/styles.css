@@ -132,6 +132,7 @@ h2 {
   right: 0;
   top: calc(100% + 0.5rem);
   min-width: 190px;
+  max-width: calc(100vw - 1.5rem);
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -644,6 +645,10 @@ a.grid-item:hover {
   }
   .nav {
     justify-content: flex-start;
+  }
+  .dropdown-menu {
+    right: auto;
+    left: 0;
   }
   .item-row {
     flex-direction: column;
