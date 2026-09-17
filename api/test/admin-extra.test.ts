@@ -3,7 +3,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { db } from '../src/db.js';
 import { hashPassword } from '../src/lib/password.js';
-import { businessItems, businesses, categories, users } from '../src/schema.js';
+import { businessItems, businesses, categories, productCategories, users } from '../src/schema.js';
 import { truncateAll } from './helpers.js';
 
 const BASE = '/api/v1';
@@ -198,7 +198,7 @@ describe('negocios (vista admin)', () => {
 });
 
 describe('categorías', () => {
-  it('la lectura es pública y cualquier usuario autenticado puede crear', async () => {
+  it('la lectura es pública y solo admin puede crear', async () => {
     const admin = await createAdmin();
     const publicRead = await app.inject({ method: 'GET', url: `${BASE}/categories` });
     expect(publicRead.statusCode).toBe(200);
@@ -210,7 +210,7 @@ describe('categorías', () => {
       headers: auth(consumer.accessToken),
       payload: { name: 'Café', kind: 'negocio' },
     });
-    expect(byConsumer.statusCode).toBe(201);
+    expect(byConsumer.statusCode).toBe(403);
 
     const create = await app.inject({
       method: 'POST',
@@ -248,6 +248,47 @@ describe('categorías', () => {
     expect(dup.statusCode).toBe(409);
   });
 
+  it('admin renombra un tipo de negocio', async () => {
+    const admin = await createAdmin();
+    const [cat] = await db
+      .insert(categories)
+      .values({ name: 'Panadería', kind: 'negocio' })
+      .returning();
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/categories/${cat.id}`,
+      headers: auth(admin.accessToken),
+      payload: { name: 'Panadería y Repostería' },
+    });
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json().category.name).toBe('Panadería y Repostería');
+  });
+
+  it('rechaza renombrar a un tipo de negocio duplicado', async () => {
+    const admin = await createAdmin();
+    const payload = { name: 'Café', kind: 'negocio' };
+    await app.inject({
+      method: 'POST',
+      url: `${BASE}/categories`,
+      headers: auth(admin.accessToken),
+      payload,
+    });
+    const [other] = await db
+      .insert(categories)
+      .values({ name: 'Cafetería', kind: 'negocio' })
+      .returning();
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/categories/${other.id}`,
+      headers: auth(admin.accessToken),
+      payload: { name: 'Café' },
+    });
+    expect(patch.statusCode).toBe(409);
+    expect(patch.json().message).toBe('El tipo de negocio ya existe');
+  });
+
   it('permite borrar una categoría sin uso y bloquea si está en uso', async () => {
     const admin = await createAdmin();
     const [cat] = await db.insert(categories).values({ name: 'Café', kind: 'negocio' }).returning();
@@ -270,5 +311,56 @@ describe('categorías', () => {
       headers: auth(admin.accessToken),
     });
     expect(inUse.statusCode).toBe(409);
+  });
+
+  it('devuelve estadísticas generales solo a admin', async () => {
+    const consumer = await register('Ana', 'ana@ejemplo.com');
+    const forbidden = await app.inject({
+      method: 'GET',
+      url: `${BASE}/admin/stats`,
+      headers: auth(consumer.accessToken),
+    });
+    expect(forbidden.statusCode).toBe(403);
+
+    const admin = await createAdmin();
+    const [owner] = await db
+      .insert(users)
+      .values({ name: 'Luis', email: 'luis@ejemplo.com', passwordHash: 'x', role: 'productor' })
+      .returning();
+    const [cat] = await db.insert(categories).values({ name: 'Café', kind: 'negocio' }).returning();
+    const [prodCat] = await db.insert(productCategories).values({ name: 'Bebidas' }).returning();
+    const [biz] = await db
+      .insert(businesses)
+      .values({ name: 'Cafetería', ownerId: owner.id, active: true, categoryId: cat.id })
+      .returning();
+    await db.insert(businessItems).values({
+      businessId: biz.id,
+      type: 'producto',
+      name: 'Café',
+      price: 50,
+      categoryId: prodCat.id,
+    });
+    await db.insert(businessItems).values({
+      businessId: biz.id,
+      type: 'servicio',
+      name: 'Barista a domicilio',
+      price: 100,
+    });
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `${BASE}/admin/stats`,
+      headers: auth(admin.accessToken),
+    });
+    expect(res.statusCode).toBe(200);
+    const stats = res.json();
+    expect(stats.totals.businesses).toBeGreaterThanOrEqual(1);
+    expect(stats.totals.products).toBe(1);
+    expect(stats.totals.services).toBe(1);
+    expect(stats.byBusiness).toContainEqual({ name: 'Cafetería', products: 1, services: 1 });
+    expect(stats.businessesByCategory).toContainEqual({ name: 'Café', count: 1 });
+    expect(stats.productsByCategory).toContainEqual(
+      expect.objectContaining({ name: expect.any(String), count: expect.any(Number) }),
+    );
   });
 });

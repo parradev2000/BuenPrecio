@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { ROLE_LABELS } from '@buenprecio/shared';
 import { useAuth } from '../context/AuthContext';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -48,6 +47,11 @@ export function Layout() {
             <span className="brand-dot">$</span> Buen Precio
           </Link>
           <nav className="nav">
+            {session?.user.role === 'administrador' && (
+              <NavLink to="/dashboard" className={navLinkClass}>
+                Dashboard
+              </NavLink>
+            )}
             <NavLink to="/catalogo" className={navLinkClass}>
               Catálogo
             </NavLink>
@@ -119,7 +123,12 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="footer">
-        Buen Precio — {ROLE_LABELS.consumidor} · {ROLE_LABELS.productor} · {ROLE_LABELS.administrador}
+        <div className="footer-inner">
+          <span className="footer-copyright">© 2026 BuenPrecio · Todos los derechos reservados · @ParraDEV</span>
+          <Link to="/contacto" className="footer-link">
+            Contáctanos
+          </Link>
+        </div>
       </footer>
     </div>
   );

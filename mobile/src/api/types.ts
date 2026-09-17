@@ -124,3 +124,14 @@ export type AdminBusiness = {
   ownerName: string;
   ownerEmail: string;
 };
+
+export type AdminStats = {
+  totals: {
+    businesses: number;
+    products: number;
+    services: number;
+  };
+  byBusiness: { name: string; products: number; services: number }[];
+  businessesByCategory: { name: string; count: number }[];
+  productsByCategory: { name: string; count: number }[];
+};

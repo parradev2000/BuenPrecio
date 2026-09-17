@@ -29,3 +29,5 @@ yarn-error.log*
 
 # Uploaded media
 uploads/
+# Local tooling
+.freebuff/

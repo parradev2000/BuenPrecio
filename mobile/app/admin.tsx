@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Alert as NativeAlert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { api, ApiError } from '../src/api/client';
 import type {
   AdminApplication,
   AdminBusiness,
+  AdminStats,
   ApplicationStatus,
   Category,
   ProductCategory,
@@ -13,11 +14,12 @@ import type {
 } from '../src/api/types';
 import { Alert, Button, EmptyState, Loading, Screen, TextField } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
-import { COLORS } from '../src/lib/format';
+import { badgeColors, COLORS, type BadgeTone } from '../src/lib/format';
 
-type TabId = 'applications' | 'users' | 'categories' | 'productCategories' | 'businesses';
+type TabId = 'dashboard' | 'applications' | 'users' | 'categories' | 'productCategories' | 'businesses';
 
 const TABS: { id: TabId; label: string }[] = [
+  { id: 'dashboard', label: 'Dashboard' },
   { id: 'applications', label: 'Solicitudes' },
   { id: 'users', label: 'Usuarios' },
   { id: 'categories', label: 'Tipos de negocio' },
@@ -46,9 +48,39 @@ function formatDate(iso: string) {
   return `${dd}/${mm}/${d.getFullYear()} ${hh}:${mi}`;
 }
 
+function Badge({ tone, children }: { tone: BadgeTone; children: ReactNode }) {
+  const { bg, fg } = badgeColors(tone);
+  return (
+    <View style={[styles.badge, { backgroundColor: bg }]}>
+      <Text style={[styles.badgeText, { color: fg }]}>{children}</Text>
+    </View>
+  );
+}
+
+function Avatar({ name }: { name: string }) {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('');
+  return (
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>{initials}</Text>
+    </View>
+  );
+}
+
+const APPLICATION_TONE: Record<ApplicationStatus, BadgeTone> = {
+  pending: 'warning',
+  approved: 'success',
+  rejected: 'danger',
+};
+
 export default function AdminScreen() {
   const { session } = useAuth();
-  const [tab, setTab] = useState<TabId>('applications');
+  const [tab, setTab] = useState<TabId>('dashboard');
 
   if (!session) {
     return <Redirect href="/login" />;
@@ -70,12 +102,168 @@ export default function AdminScreen() {
           </Pressable>
         ))}
       </View>
+      {tab === 'dashboard' && <DashboardTab />}
       {tab === 'applications' && <ApplicationsTab />}
       {tab === 'users' && <UsersTab />}
       {tab === 'categories' && <CategoriesTab />}
       {tab === 'productCategories' && <ProductCategoriesTab />}
       {tab === 'businesses' && <BusinessesTab />}
     </Screen>
+  );
+}
+
+function DashboardTab() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api<AdminStats>('/admin/stats', { auth: true });
+      setStats(res);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'No se pudieron cargar');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  function StatCard({ value, label }: { value: number; label: string }) {
+    return (
+      <View style={styles.statCard}>
+        <Text style={styles.statValue}>{value}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
+    );
+  }
+
+  function ChartBar({ value, max, color }: { value: number; max: number; color: string }) {
+    return (
+      <View style={styles.barCol}>
+        <Text style={styles.barValue}>{value}</Text>
+        <View
+          style={[
+            styles.chartBar,
+            { height: Math.max(2, Math.round((value / max) * 130)), backgroundColor: color },
+          ]}
+        />
+      </View>
+    );
+  }
+
+  function BarChart({
+    title,
+    rows,
+    color,
+  }: {
+    title: string;
+    rows: { name: string; count: number }[];
+    color: string;
+  }) {
+    const max = Math.max(1, ...rows.map((r) => r.count));
+    return (
+      <View style={styles.chart}>
+        <Text style={styles.chartTitle}>{title}</Text>
+        {rows.length === 0 ? (
+          <Text style={styles.chartEmpty}>Sin datos todavía.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.chartGroups}>
+              {rows.map((row) => (
+                <View key={row.name} style={styles.chartGroup}>
+                  <ChartBar value={row.count} max={max} color={color} />
+                  <Text style={styles.chartName} numberOfLines={1}>
+                    {row.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+      </View>
+    );
+  }
+
+  function PerBusinessChart({ rows }: { rows: { name: string; products: number; services: number }[] }) {
+    const max = Math.max(1, ...rows.map((r) => r.products + r.services));
+    return (
+      <View style={styles.chart}>
+        <Text style={styles.chartTitle}>Productos y servicios por negocio</Text>
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: COLORS.primaryDark }]} />
+            <Text style={styles.legendText}>Productos</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#e19125' }]} />
+            <Text style={styles.legendText}>Servicios</Text>
+          </View>
+        </View>
+        {rows.length === 0 ? (
+          <Text style={styles.chartEmpty}>Sin datos todavía.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.chartGroups}>
+              {rows.map((row) => (
+                <View key={row.name} style={styles.chartGroup}>
+                  <View style={styles.chartBars}>
+                    <ChartBar value={row.products} max={max} color={COLORS.primaryDark} />
+                    <ChartBar value={row.services} max={max} color="#e19125" />
+                  </View>
+                  <Text style={styles.chartName} numberOfLines={1}>
+                    {row.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.body}>
+      <View style={styles.adminHead}>
+        <View style={styles.userInfo}>
+          <Text style={styles.cardTitle}>Dashboard</Text>
+          <Text style={styles.muted}>Datos generales de la plataforma.</Text>
+        </View>
+        <Button title="Actualizar" variant="secondary" disabled={loading} onPress={() => void load()} />
+      </View>
+      {error && <Alert kind="error">{error}</Alert>}
+      {loading ? (
+        <Loading />
+      ) : stats ? (
+        <ScrollView contentContainerStyle={styles.statContent}>
+          <View style={styles.statGrid}>
+            <StatCard value={stats.totals.businesses} label="Negocios" />
+            <StatCard value={stats.totals.products} label="Productos" />
+            <StatCard value={stats.totals.services} label="Servicios" />
+          </View>
+
+          <PerBusinessChart rows={stats.byBusiness} />
+
+          <BarChart
+            title="Negocios por tipo de negocio"
+            rows={stats.businessesByCategory}
+            color={COLORS.primary}
+          />
+
+          <BarChart
+            title="Productos por categoría de producto"
+            rows={stats.productsByCategory}
+            color="#2d6cdf"
+          />
+        </ScrollView>
+      ) : null}
+    </View>
   );
 }
 
@@ -141,8 +329,14 @@ function ApplicationsTab() {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>{item.userName}</Text>
-              <Text style={styles.muted}>{item.userEmail}</Text>
+              <View style={styles.userRow}>
+                <Avatar name={item.userName} />
+                <View style={styles.userInfo}>
+                  <Text style={styles.cardTitle}>{item.userName}</Text>
+                  <Text style={styles.muted}>{item.userEmail}</Text>
+                </View>
+                <Badge tone={APPLICATION_TONE[item.status]}>{STATUS_LABEL[item.status]}</Badge>
+              </View>
               <Text style={styles.muted}>Solicitó el {formatDate(item.createdAt)}</Text>
               {item.status === 'pending' ? (
                 <View style={styles.rowActions}>
@@ -159,9 +353,7 @@ function ApplicationsTab() {
                     onPress={() => void review(item.id, 'reject')}
                   />
                 </View>
-              ) : (
-                <Text style={styles.muted}>Estado: {STATUS_LABEL[item.status]}</Text>
-              )}
+              ) : null}
             </View>
           )}
         />
@@ -272,10 +464,16 @@ function UsersTab() {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>{item.name}</Text>
-              <Text style={styles.muted}>
-                {item.email} · {item.status === 'active' ? 'activo' : 'suspendido'}
-              </Text>
+              <View style={styles.userRow}>
+                <Avatar name={item.name} />
+                <View style={styles.userInfo}>
+                  <Text style={styles.cardTitle}>{item.name}</Text>
+                  <Text style={styles.muted}>{item.email}</Text>
+                </View>
+                <Badge tone={item.status === 'active' ? 'success' : 'danger'}>
+                  {item.status === 'active' ? 'Activo' : 'Suspendido'}
+                </Badge>
+              </View>
               <View style={styles.chips}>
                 {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
                   <Pressable
@@ -315,6 +513,8 @@ function CategoriesTab() {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<Category | null>(null);
+  const [editName, setEditName] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -351,6 +551,25 @@ function CategoriesTab() {
     }
   }
 
+  async function saveEdit() {
+    if (!editing || !editName.trim()) {
+      setError('Escribe un nombre');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/categories/${editing.id}`, { method: 'PATCH', body: { name: editName.trim() }, auth: true });
+      setEditing(null);
+      setEditName('');
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function removeCategory(id: string) {
     setBusy(true);
     setError(null);
@@ -378,15 +597,42 @@ function CategoriesTab() {
       ) : (
         items
           .filter((c) => c.kind === 'negocio')
-          .map((c) => (
-            <View key={c.id} style={styles.card}>
-              <View style={styles.cardTop}>
-                <Text style={styles.cardTitle}>{c.name}</Text>
-                <Text style={styles.muted}>Negocio</Text>
+          .map((c) =>
+            editing?.id === c.id ? (
+              <View key={c.id} style={styles.card}>
+                <Text style={styles.sectionTitle}>Editar tipo de negocio</Text>
+                <TextField label="Nombre" value={editName} onChangeText={setEditName} placeholder="Ej. Panadería" />
+                <View style={styles.rowActions}>
+                  <Button
+                    title={busy ? 'Guardando…' : 'Guardar'}
+                    variant="primary"
+                    disabled={busy || !editName.trim()}
+                    onPress={() => void saveEdit()}
+                  />
+                  <Button title="Cancelar" variant="ghost" disabled={busy} onPress={() => setEditing(null)} />
+                </View>
               </View>
-              <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
-            </View>
-          ))
+            ) : (
+              <View key={c.id} style={styles.card}>
+                <View style={styles.cardTop}>
+                  <Text style={styles.cardTitle}>{c.name}</Text>
+                  <Badge tone="success">Negocio</Badge>
+                </View>
+                <View style={styles.rowActions}>
+                  <Button
+                    title="Editar"
+                    variant="secondary"
+                    disabled={busy}
+                    onPress={() => {
+                      setEditing(c);
+                      setEditName(c.name);
+                    }}
+                  />
+                  <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+                </View>
+              </View>
+            ),
+          )
       )}
     </ScrollView>
   );
@@ -398,6 +644,8 @@ function ProductCategoriesTab() {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<ProductCategory | null>(null);
+  const [editName, setEditName] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -434,6 +682,25 @@ function ProductCategoriesTab() {
     }
   }
 
+  async function saveEdit() {
+    if (!editing || !editName.trim()) {
+      setError('Escribe un nombre');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/product-categories/${editing.id}`, { method: 'PATCH', body: { name: editName.trim() }, auth: true });
+      setEditing(null);
+      setEditName('');
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function removeCategory(id: string) {
     setBusy(true);
     setError(null);
@@ -459,15 +726,42 @@ function ProductCategoriesTab() {
       ) : items.length === 0 ? (
         <EmptyState message="Sin categorías de producto." />
       ) : (
-        items.map((c) => (
-          <View key={c.id} style={styles.card}>
-            <View style={styles.cardTop}>
-              <Text style={styles.cardTitle}>{c.name}</Text>
-              <Text style={styles.muted}>Producto</Text>
+        items.map((c) =>
+          editing?.id === c.id ? (
+            <View key={c.id} style={styles.card}>
+              <Text style={styles.sectionTitle}>Editar categoría</Text>
+              <TextField label="Nombre" value={editName} onChangeText={setEditName} placeholder="Ej. Frutas y Verduras" />
+              <View style={styles.rowActions}>
+                <Button
+                  title={busy ? 'Guardando…' : 'Guardar'}
+                  variant="primary"
+                  disabled={busy || !editName.trim()}
+                  onPress={() => void saveEdit()}
+                />
+                <Button title="Cancelar" variant="ghost" disabled={busy} onPress={() => setEditing(null)} />
+              </View>
             </View>
-            <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
-          </View>
-        ))
+          ) : (
+            <View key={c.id} style={styles.card}>
+              <View style={styles.cardTop}>
+                <Text style={styles.cardTitle}>{c.name}</Text>
+                <Badge tone="neutral">Producto</Badge>
+              </View>
+              <View style={styles.rowActions}>
+                <Button
+                  title="Editar"
+                  variant="secondary"
+                  disabled={busy}
+                  onPress={() => {
+                    setEditing(c);
+                    setEditName(c.name);
+                  }}
+                />
+                <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+              </View>
+            </View>
+          ),
+        )
       )}
     </ScrollView>
   );
@@ -527,13 +821,16 @@ function BusinessesTab() {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <View style={styles.cardTop}>
-                <Text style={styles.cardTitle}>{item.name}</Text>
-                <Text style={item.active ? styles.activeBadge : styles.inactiveBadge}>
-                  {item.active ? 'activo' : 'inactivo'}
-                </Text>
+              <View style={styles.userRow}>
+                <Avatar name={item.name} />
+                <View style={styles.userInfo}>
+                  <Text style={styles.cardTitle}>{item.name}</Text>
+                  {item.address ? <Text style={styles.muted}>{item.address}</Text> : null}
+                </View>
+                <Badge tone={item.active ? 'success' : 'neutral'}>
+                  {item.active ? 'Activo' : 'Inactivo'}
+                </Badge>
               </View>
-              {item.address ? <Text style={styles.muted}>{item.address}</Text> : null}
               <Text style={styles.muted}>
                 {item.ownerName} ({item.ownerEmail})
               </Text>
@@ -632,18 +929,142 @@ const styles = StyleSheet.create({
   muted: {
     color: COLORS.muted,
   },
-  activeBadge: {
-    color: COLORS.primary,
-    fontWeight: '600',
+  badge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
   },
-  inactiveBadge: {
-    color: COLORS.dangerDark,
-    fontWeight: '600',
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  userInfo: {
+    flex: 1,
   },
   rowActions: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 8,
+  },
+  adminHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 8,
+  },
+  statContent: {
+    paddingBottom: 24,
+  },
+  statGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statCard: {
+    flexBasis: '30%',
+    flexGrow: 1,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    padding: 12,
+    gap: 2,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: COLORS.muted,
+  },
+  chart: {
+    marginTop: 18,
+  },
+  chartTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    color: COLORS.muted,
+  },
+  chartEmpty: {
+    color: COLORS.muted,
+    fontSize: 13,
+    marginTop: 6,
+  },
+  chartGroups: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 14,
+    marginTop: 8,
+  },
+  chartGroup: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  chartBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  barCol: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  barValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  chartBar: {
+    width: 24,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  chartName: {
+    fontSize: 12,
+    color: COLORS.muted,
+    maxWidth: 76,
+  },
+  legend: {
+    flexDirection: 'row',
+    gap: 14,
+    marginTop: 6,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 3,
+  },
+  legendText: {
+    fontSize: 12,
+    color: COLORS.muted,
   },
   sectionTitle: {
     fontSize: 15,

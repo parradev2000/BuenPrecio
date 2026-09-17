@@ -5,6 +5,8 @@ import { AdminPage } from './pages/AdminPage';
 import { AccountPage } from './pages/AccountPage';
 import { BusinessDetailPage } from './pages/BusinessDetailPage';
 import { CatalogPage } from './pages/CatalogPage';
+import { ContactPage } from './pages/ContactPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
@@ -18,6 +20,7 @@ export function Router() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="/catalogo" element={<CatalogPage />} />
+        <Route path="/contacto" element={<ContactPage />} />
         <Route path="/productos/:id" element={<ProductDetailPage />} />
         <Route path="/catalogo/:id" element={<BusinessDetailPage />} />
         <Route
@@ -57,6 +60,14 @@ export function Router() {
           element={
             <RequireRole role="productor">
               <BusinessItemsPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <RequireRole role="administrador">
+              <DashboardPage />
             </RequireRole>
           }
         />

@@ -17,6 +17,11 @@ export default function CatalogScreen() {
 
   return (
     <Screen>
+      {session?.user.role === 'administrador' && (
+        <Pressable style={styles.producerBtn} onPress={() => router.push('/admin')}>
+          <Text style={styles.producerBtnText}>Dashboard</Text>
+        </Pressable>
+      )}
       {session?.user.role === 'productor' && (
         <Pressable style={styles.producerBtn} onPress={() => router.push('/my-businesses')}>
           <Text style={styles.producerBtnText}>Gestionar mis negocios</Text>

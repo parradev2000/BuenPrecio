@@ -3,7 +3,7 @@ import { count, eq } from 'drizzle-orm';
 import { createCategorySchema, updateCategorySchema } from '@buenprecio/shared';
 import { db } from '../db.js';
 import { sendError } from '../lib/errors.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { requireRole } from '../middleware/auth.js';
 import { businessItems, businesses, categories } from '../schema.js';
 
 async function isInUse(categoryId: string): Promise<boolean> {
@@ -26,7 +26,7 @@ export async function categoryRoutes(app: FastifyInstance) {
     return { items: rows, total: rows.length };
   });
 
-  app.post('/categories', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/categories', adminOnly, async (request, reply) => {
     const parsed = createCategorySchema.safeParse(request.body);
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
@@ -55,6 +55,19 @@ export async function categoryRoutes(app: FastifyInstance) {
     const values = parsed.data;
     if (values.kind && values.kind !== target.kind && (await isInUse(target.id))) {
       return sendError(reply, 409, 'El tipo de negocio está en uso y no puede cambiar de tipo');
+    }
+    if (values.name && values.name !== target.name) {
+      const nextName = values.name;
+      const existing = await db.query.categories.findFirst({
+        where: (categories, { and }) =>
+          and(
+            eq(categories.kind, values.kind ?? target.kind),
+            eq(categories.name, nextName),
+          ),
+      });
+      if (existing) {
+        return sendError(reply, 409, 'El tipo de negocio ya existe');
+      }
     }
     const [updated] = await db
       .update(categories)

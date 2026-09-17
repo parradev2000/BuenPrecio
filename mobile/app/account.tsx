@@ -157,6 +157,14 @@ export default function AccountScreen() {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.cardTitle}>Contáctanos</Text>
+          <Text style={styles.muted}>
+            Información del desarrollador y dueño de la aplicación.
+          </Text>
+          <Button variant="secondary" title="Ver contacto" onPress={() => router.push('/contact')} />
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Cambiar contraseña</Text>
           {pwMessage && <Alert kind="success">{pwMessage}</Alert>}
           {pwError && <Alert kind="error">{pwError}</Alert>}
