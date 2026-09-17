@@ -22,7 +22,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Permitir a Buen Precio usar tu ubicación para completar la dirección de tu negocio."
+          "locationWhenInUsePermission": "Buen Precio usa tu ubicación para mostrarte los productos y negocios más cercanos a ti."
         }
       ]
     ],

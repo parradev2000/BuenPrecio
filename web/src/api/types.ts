@@ -32,6 +32,28 @@ export type PublicItem = {
 
 export type CatalogBusinessDetail = CatalogBusiness & { items: PublicItem[] };
 
+export type CatalogProduct = {
+  id: string;
+  type: ItemType;
+  name: string;
+  description: string | null;
+  price: number;
+  unit: ItemUnit | null;
+  photoUrl: string | null;
+  categoryName: string | null;
+  businessId: string;
+  businessName: string;
+  businessAddress: string | null;
+  businessLatitude: number | null;
+  businessLongitude: number | null;
+  distanceKm: number | null;
+};
+
+export type CatalogProductDetail = CatalogProduct & {
+  businessPhone: string | null;
+  businessPhotoUrl: string | null;
+};
+
 export type Business = {
   id: string;
   name: string;

@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
+import { CURRENCY } from '@buenprecio/shared';
 import { db } from './db.js';
-import { businesses } from './schema.js';
+import { businesses, businessItems } from './schema.js';
 
 export const SITE_URL = 'https://buenprecio.onrender.com';
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
@@ -32,9 +33,9 @@ const HOME_VIEW: SeoView = {
 };
 
 const CATALOG_VIEW: SeoView = {
-  title: 'Catálogo de negocios - Buen Precio',
+  title: 'Catálogo de productos - Buen Precio',
   description:
-    'Explora negocios locales, sus productos y servicios, con precios visibles y tipos de negocio claros para comparar mejor.',
+    'Busca productos y servicios de negocios locales cerca de ti, compara precios en CUP y encuentra el mejor en Buen Precio.',
   url: `${SITE_URL}/catalogo`,
   jsonLd: DEFAULT_ORG,
 };
@@ -65,6 +66,11 @@ export function seoViewForUrl(url: string): Promise<SeoView> {
   const businessMatch = /^\/catalogo\/([0-9a-zA-Z-]+)$/.exec(path);
   if (businessMatch) {
     return businessSeoView(businessMatch[1]);
+  }
+
+  const productMatch = /^\/productos\/([0-9a-zA-Z-]+)$/.exec(path);
+  if (productMatch) {
+    return productSeoView(productMatch[1]);
   }
 
   const privateMatch = /^(\/mi-cuenta|\/mis-negocios|\/admin)/.exec(path);
@@ -110,6 +116,58 @@ async function businessSeoView(id: string): Promise<SeoView> {
     ...(row.address
       ? { address: { '@type': 'PostalAddress', streetAddress: row.address } }
       : {}),
+  };
+
+  return { title: `${row.name} - Buen Precio`, description, url, image, jsonLd };
+}
+
+async function productSeoView(id: string): Promise<SeoView> {
+  const [row] = await db
+    .select({
+      id: businessItems.id,
+      name: businessItems.name,
+      description: businessItems.description,
+      price: businessItems.price,
+      photoUrl: businessItems.photoUrl,
+      businessId: businesses.id,
+      businessName: businesses.name,
+      businessAddress: businesses.address,
+    })
+    .from(businessItems)
+    .innerJoin(businesses, eq(businessItems.businessId, businesses.id))
+    .where(and(eq(businessItems.id, id), eq(businessItems.available, true), eq(businesses.active, true)))
+    .limit(1);
+
+  if (!row) return HOME_VIEW;
+
+  const url = `${SITE_URL}/productos/${row.id}`;
+  const image = row.photoUrl
+    ? row.photoUrl.startsWith('http')
+      ? row.photoUrl
+      : `${SITE_URL}${row.photoUrl.startsWith('/') ? '' : '/'}${row.photoUrl}`
+    : DEFAULT_IMAGE;
+  const description = row.description ?? `${row.name} de ${row.businessName}.`;
+
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: row.name,
+    url,
+    image,
+    description,
+    offers: {
+      '@type': 'Offer',
+      price: row.price,
+      priceCurrency: CURRENCY.code,
+      availability: 'https://schema.org/InStock',
+    },
+    seller: {
+      '@type': 'LocalBusiness',
+      name: row.businessName,
+      ...(row.businessAddress
+        ? { address: { '@type': 'PostalAddress', streetAddress: row.businessAddress } }
+        : {}),
+    },
   };
 
   return { title: `${row.name} - Buen Precio`, description, url, image, jsonLd };

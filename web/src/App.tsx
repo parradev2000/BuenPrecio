@@ -7,6 +7,7 @@ import { BusinessDetailPage } from './pages/BusinessDetailPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ProducerPage } from './pages/ProducerPage';
 import { BusinessItemsPage } from './pages/BusinessItemsPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -17,6 +18,7 @@ export function Router() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="/catalogo" element={<CatalogPage />} />
+        <Route path="/productos/:id" element={<ProductDetailPage />} />
         <Route path="/catalogo/:id" element={<BusinessDetailPage />} />
         <Route
           path="/entrar"

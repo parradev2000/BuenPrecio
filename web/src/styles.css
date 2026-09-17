@@ -400,6 +400,42 @@ h2 {
   font-size: 0.9rem;
 }
 
+.price {
+  font-weight: 700;
+  color: var(--primary-dark);
+  font-size: 1.05rem;
+  margin: 0.1rem 0;
+}
+
+.distance-badge {
+  display: inline-block;
+  background: #eef1f6;
+  color: var(--muted);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+}
+
+.loc-banner {
+  background: var(--card);
+  border: 1px dashed var(--primary);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+  margin: 0.75rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+}
+
+.loc-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .tab-count {
   display: inline-flex;
   align-items: center;
