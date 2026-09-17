@@ -6,9 +6,11 @@
   --border: #e2e6ec;
   --primary: #0b7a4b;
   --primary-dark: #08663e;
+  --primary-bg: #e7f6ee;
   --danger: #c0302b;
   --danger-dark: #a52925;
   --radius: 10px;
+  --content-max: 1100px;
   --shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
 }
 
@@ -40,6 +42,7 @@ h2 {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .header {
@@ -245,6 +248,7 @@ h2 {
   color: var(--primary);
   font-weight: 600;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 .contact-link:hover {
@@ -348,6 +352,7 @@ h2 {
   display: flex;
   gap: 0.6rem;
   align-items: flex-end;
+  flex-wrap: wrap;
 }
 .inline-field > .field-input,
 .inline-field > .field {
@@ -511,7 +516,7 @@ h2 {
 
 .detail-photo {
   width: 100%;
-  height: 240px;
+  height: clamp(180px, 50vw, 240px);
   object-fit: cover;
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -544,6 +549,7 @@ h2 {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .card {
@@ -556,14 +562,14 @@ h2 {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -579,6 +585,7 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  overflow-wrap: anywhere;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
@@ -670,6 +677,7 @@ a.grid-item:active {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .form-header {
@@ -677,6 +685,7 @@ a.grid-item:active {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .back-link {
@@ -709,6 +718,7 @@ a.grid-item:active {
   justify-content: space-between;
   gap: 1rem;
   box-shadow: var(--shadow);
+  overflow-wrap: anywhere;
 }
 
 .item-off {
@@ -755,6 +765,7 @@ a.grid-item:active {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .profile {
@@ -763,6 +774,7 @@ a.grid-item:active {
   border-radius: var(--radius);
   padding: 1rem 1.2rem;
   margin-bottom: 1rem;
+  overflow-wrap: anywhere;
 }
 
 .map-picker {
@@ -782,6 +794,7 @@ a.grid-item:active {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .map-pin {
@@ -974,7 +987,7 @@ a.grid-item:active {
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
   gap: 0.6rem;
   margin-top: 0.5rem;
 }
@@ -1025,7 +1038,7 @@ a.grid-item:active {
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: 0.7rem;
 }
 
@@ -1259,5 +1272,79 @@ a.grid-item:active {
   .item-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .hero {
+    padding: 1.6rem 0.5rem 1.2rem;
+  }
+  .hero h1 {
+    font-size: 1.55rem;
+  }
+  .hero-actions > .btn {
+    width: 100%;
+  }
+
+  .form {
+    padding: 1rem;
+  }
+
+  .filters .field-input {
+    width: 100%;
+  }
+
+  .tabs .tab {
+    min-height: 40px;
+  }
+
+  .inline-field {
+    align-items: stretch;
+  }
+  .inline-field > .field-input,
+  .inline-field > .field,
+  .inline-field > .btn {
+    flex: 1 1 100%;
+  }
+
+  .btn-sm {
+    min-height: 40px;
+    padding: 0.45rem 0.85rem;
+  }
+
+  .pagination {
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .pagination .btn {
+    min-height: 40px;
+  }
+
+  .field-input,
+  .field-input-sm {
+    font-size: 16px;
+  }
+
+  .map-picker-canvas {
+    height: 220px;
+  }
+
+  .contact-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+  .contact-label {
+    min-width: 0;
+  }
+
+  .admin-filters {
+    width: 100%;
+  }
+  .admin-head .field-input,
+  .admin-filters .field-input {
+    width: 100%;
+  }
+
+  .nav {
+    gap: 0.6rem;
   }
 }
