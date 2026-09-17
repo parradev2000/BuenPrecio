@@ -46,8 +46,9 @@ export default function CatalogScreen() {
 function ProductsCatalog() {
   const router = useRouter();
   const [items, setItems] = useState<CatalogProduct[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
-  const [place, setPlace] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [loading, setLoading] = useState(true);
   const { status, coords, error, enable, disable } = useUserLocation();
 
@@ -56,20 +57,24 @@ function ProductsCatalog() {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (place) params.set('place', place);
+      if (categoryId) params.set('categoryId', categoryId);
       if (status === 'enabled' && coords) {
         params.set('lat', String(coords.latitude));
         params.set('lng', String(coords.longitude));
       }
-      const res = await api<{ items: CatalogProduct[] }>(`/catalog/products?${params.toString()}`);
-      setItems(res.items);
+      const [productsRes, cats] = await Promise.all([
+        api<{ items: CatalogProduct[] }>(`/catalog/products?${params.toString()}`),
+        api<{ items: Category[] }>('/categories'),
+      ]);
+      setItems(productsRes.items);
+      setCategories(cats.items.filter((c) => c.kind === 'item'));
     } catch {
       setItems([]);
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, place, status, coords?.latitude, coords?.longitude]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, categoryId, status, coords?.latitude, coords?.longitude]);
 
   useEffect(() => {
     void load();
@@ -85,13 +90,23 @@ function ProductsCatalog() {
           value={search}
           onChangeText={setSearch}
         />
-        <TextInput
-          style={styles.search}
-          placeholder="Lugar (dirección, barrio, ciudad)…"
-          placeholderTextColor={COLORS.muted}
-          value={place}
-          onChangeText={setPlace}
-        />
+        <View style={styles.chips}>
+          <Pressable
+            style={[styles.chip, categoryId === '' && styles.chipActive]}
+            onPress={() => setCategoryId('')}
+          >
+            <Text style={[styles.chipText, categoryId === '' && styles.chipTextActive]}>Todas</Text>
+          </Pressable>
+          {categories.map((c) => (
+            <Pressable
+              key={c.id}
+              style={[styles.chip, categoryId === c.id && styles.chipActive]}
+              onPress={() => setCategoryId(c.id)}
+            >
+              <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>{c.name}</Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       <LocationControl status={status} error={error} onEnable={() => void enable()} onDisable={disable} />
@@ -99,7 +114,7 @@ function ProductsCatalog() {
       {loading ? (
         <Loading />
       ) : items.length === 0 ? (
-        <EmptyState message={search || place ? 'No hay productos que coincidan con tu búsqueda.' : 'Aún no hay productos publicados.'} />
+        <EmptyState message={search || categoryId ? 'No hay productos que coincidan con tu búsqueda.' : 'Aún no hay productos publicados.'} />
       ) : (
         <>
           <Text style={styles.resultCount}>

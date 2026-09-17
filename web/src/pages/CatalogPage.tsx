@@ -45,9 +45,10 @@ export function CatalogPage() {
 
 function ProductsCatalog() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [place, setPlace] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { status, coords, error: locationError, enable, disable } = useUserLocation();
   const loadedRef = useRef(false);
@@ -58,20 +59,24 @@ function ProductsCatalog() {
     }, 250);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, place, coords?.latitude, coords?.longitude, status]);
+  }, [search, categoryId, coords?.latitude, coords?.longitude, status]);
 
   async function load() {
     setLoading(!loadedRef.current);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (place) params.set('place', place);
+      if (categoryId) params.set('categoryId', categoryId);
       if (status === 'enabled' && coords) {
         params.set('lat', String(coords.latitude));
         params.set('lng', String(coords.longitude));
       }
-      const res = await api<{ items: CatalogProduct[] }>(`/catalog/products?${params.toString()}`);
-      setProducts(res.items);
+      const [productsRes, cats] = await Promise.all([
+        api<{ items: CatalogProduct[] }>(`/catalog/products?${params.toString()}`),
+        api<{ items: Category[] }>('/categories'),
+      ]);
+      setProducts(productsRes.items);
+      setCategories(cats.items.filter((c) => c.kind === 'item'));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar el catálogo');
@@ -83,7 +88,7 @@ function ProductsCatalog() {
 
   function clearFilters() {
     setSearch('');
-    setPlace('');
+    setCategoryId('');
   }
 
   return (
@@ -95,12 +100,17 @@ function ProductsCatalog() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Nombre del producto…"
         />
-        <Field
-          label="Lugar"
-          value={place}
-          onChange={(e) => setPlace(e.target.value)}
-          placeholder="Dirección, barrio o ciudad…"
-        />
+        <label className="field">
+          <span className="field-label">Categoría</span>
+          <select className="field-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <option value="">Todas</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {status === 'idle' && (
@@ -128,7 +138,7 @@ function ProductsCatalog() {
 
       {error && <p className="alert alert-error">{error}</p>}
 
-      {!loading && !error && (products.length > 0 || search || place) && (
+      {!loading && !error && (products.length > 0 || search || categoryId) && (
         <p className="result-count">
           {products.length} {products.length === 1 ? 'producto' : 'productos'}
           {status === 'enabled' && ' · ordenados por cercanía'}
@@ -137,7 +147,7 @@ function ProductsCatalog() {
 
       {loading && products.length === 0 && <Loading />}
       {!loading && products.length === 0 && !error && (
-        <EmptyState message={search || place ? 'No hay productos que coincidan con tu búsqueda.' : 'Aún no hay productos publicados.'} />
+        <EmptyState message={search || categoryId ? 'No hay productos que coincidan con tu búsqueda.' : 'Aún no hay productos publicados.'} />
       )}
       {!loading && products.length > 0 && (
         <>
@@ -165,7 +175,7 @@ function ProductsCatalog() {
               </Link>
             ))}
           </div>
-          {(search || place) && (
+          {(search || categoryId) && (
             <div className="empty-action">
               <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
                 Limpiar filtros
@@ -183,7 +193,6 @@ function BusinessesCatalog() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [place, setPlace] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef(false);
@@ -194,14 +203,13 @@ function BusinessesCatalog() {
     }, 250);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, place, categoryId]);
+  }, [search, categoryId]);
 
   async function load() {
     setLoading(!loadedRef.current);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (place) params.set('place', place);
       if (categoryId) params.set('categoryId', categoryId);
       const [catalog, cats] = await Promise.all([
         api<{ items: CatalogBusiness[] }>(`/catalog?${params.toString()}`),
@@ -220,7 +228,6 @@ function BusinessesCatalog() {
 
   function clearFilters() {
     setSearch('');
-    setPlace('');
     setCategoryId('');
   }
 
@@ -236,12 +243,6 @@ function BusinessesCatalog() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Nombre del negocio…"
         />
-        <Field
-          label="Lugar"
-          value={place}
-          onChange={(e) => setPlace(e.target.value)}
-          placeholder="Dirección, barrio o ciudad…"
-        />
         <label className="field">
           <span className="field-label">Tipo de negocio</span>
           <select className="field-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
@@ -256,7 +257,7 @@ function BusinessesCatalog() {
       </div>
       {error && <p className="alert alert-error">{error}</p>}
       {!loading && businesses.length === 0 && (
-        <EmptyState message={search || place || categoryId ? 'No hay negocios que coincidan con tu búsqueda.' : 'No hay negocios publicados todavía.'} />
+        <EmptyState message={search || categoryId ? 'No hay negocios que coincidan con tu búsqueda.' : 'No hay negocios publicados todavía.'} />
       )}
       {!loading && businesses.length > 0 && (
         <p className="result-count">
@@ -286,7 +287,7 @@ function BusinessesCatalog() {
               </Link>
             ))}
           </div>
-          {(search || place || categoryId) && (
+          {(search || categoryId) && (
             <div className="empty-action">
               <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
                 Limpiar filtros

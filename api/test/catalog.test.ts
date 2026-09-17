@@ -121,13 +121,6 @@ describe('catálogo público', () => {
     });
     expect(missing.statusCode).toBe(404);
   });
-
-  it('filtra negocios por lugar (dirección)', async () => {
-    await seedCatalog();
-    const res = await app.inject({ method: 'GET', url: `${BASE}/catalog?place=central` });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().items).toHaveLength(1);
-  });
 });
 
 async function seedProducts() {
@@ -197,12 +190,17 @@ describe('catálogo de productos', () => {
     expect(items[0].id).toBe(nearItem.id);
   });
 
-  it('filtra por lugar (dirección del negocio)', async () => {
-    const { nearItem } = await seedProducts();
-    const res = await app.inject({ method: 'GET', url: `${BASE}/catalog/products?place=centro` });
+  it('filtra por categoría de producto', async () => {
+    const { catItem, activeItem } = await seedCatalog();
+    const res = await app.inject({ method: 'GET', url: `${BASE}/catalog/products?categoryId=${catItem.id}` });
     const { items } = res.json();
     expect(items).toHaveLength(1);
-    expect(items[0].id).toBe(nearItem.id);
+    expect(items[0].id).toBe(activeItem.id);
+    const empty = await app.inject({
+      method: 'GET',
+      url: `${BASE}/catalog/products?categoryId=${catItem.id}&search=otro`,
+    });
+    expect(empty.json().items).toHaveLength(0);
   });
 
   it('ordena por cercanía cuando se envían lat/lng', async () => {

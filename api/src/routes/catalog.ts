@@ -28,7 +28,7 @@ function roundKm(value: unknown): number | null {
 
 export async function catalogRoutes(app: FastifyInstance) {
   app.get('/catalog/products', async (request) => {
-    const query = request.query as { search?: string; place?: string; lat?: string; lng?: string; limit?: string };
+    const query = request.query as { search?: string; categoryId?: string; lat?: string; lng?: string; limit?: string };
     const lat = parseCoord(query.lat, -90, 90);
     const lng = parseCoord(query.lng, -180, 180);
     const useDistance = lat != null && lng != null;
@@ -37,8 +37,8 @@ export async function catalogRoutes(app: FastifyInstance) {
     if (query.search?.trim()) {
       conditions.push(ilike(businessItems.name, `%${query.search.trim()}%`));
     }
-    if (query.place?.trim()) {
-      conditions.push(ilike(businesses.address, `%${query.place.trim()}%`));
+    if (query.categoryId) {
+      conditions.push(eq(businessItems.categoryId, query.categoryId));
     }
     const limit = Math.min(Math.max(Number(query.limit) || 40, 1), 50);
     const distanceExpr = useDistance ? haversineKm(lat!, lng!) : sql<number>`null`;
@@ -110,14 +110,11 @@ export async function catalogRoutes(app: FastifyInstance) {
   });
 
   app.get('/catalog', async (request) => {
-    const query = request.query as { search?: string; place?: string; categoryId?: string; limit?: string };
+    const query = request.query as { search?: string; categoryId?: string; limit?: string };
 
     const conditions = [eq(businesses.active, true)];
     if (query.search?.trim()) {
       conditions.push(ilike(businesses.name, `%${query.search.trim()}%`));
-    }
-    if (query.place?.trim()) {
-      conditions.push(ilike(businesses.address, `%${query.place.trim()}%`));
     }
     if (query.categoryId) {
       conditions.push(eq(businesses.categoryId, query.categoryId));
