@@ -117,22 +117,22 @@ export function AdminBusinessesSection() {
             <tbody>
               {paged.map((b) => (
                 <tr key={b.id}>
-                  <td>
+                  <td data-label="Negocio">
                     <span className="admin-cell-user">
                       <span className="avatar-initial">{b.name[0]?.toUpperCase() ?? 'N'}</span>
                       <strong>{b.name}</strong>
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     <span className={`badge ${b.active ? 'badge-success' : 'badge-neutral'}`}>
                       {b.active ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td className="hide-sm">{b.ownerName}</td>
-                  <td className="cell-muted hide-sm">{b.ownerEmail}</td>
-                  <td className="cell-muted hide-sm">{b.address ?? '—'}</td>
-                  <td>{b.itemsCount}</td>
-                  <td>
+                  <td className="hide-sm" data-label="Dueño">{b.ownerName}</td>
+                  <td className="cell-muted hide-sm" data-label="Correo">{b.ownerEmail}</td>
+                  <td className="cell-muted hide-sm" data-label="Ubicación">{b.address ?? '—'}</td>
+                  <td data-label="Productos">{b.itemsCount}</td>
+                  <td data-label="Acciones">
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => void toggle(b)}>
                       {b.active ? 'Desactivar' : 'Activar'}
                     </button>

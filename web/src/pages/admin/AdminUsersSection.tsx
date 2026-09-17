@@ -144,7 +144,7 @@ export function AdminUsersSection() {
             <tbody>
               {paged.map((u) => (
                 <tr key={u.id}>
-                  <td>
+                  <td data-label="Usuario">
                     <span className="admin-cell-user">
                       <span className="avatar-initial">{initials(u.name)}</span>
                       <span className="cell-meta">
@@ -153,8 +153,8 @@ export function AdminUsersSection() {
                       </span>
                     </span>
                   </td>
-                  <td className="cell-muted hide-sm">{new Date(u.createdAt).toLocaleDateString('es-CU')}</td>
-                  <td>
+                  <td className="cell-muted hide-sm" data-label="Creado">{new Date(u.createdAt).toLocaleDateString('es-CU')}</td>
+                  <td data-label="Rol">
                     <select
                       className="field-input field-input-sm"
                       value={u.role}
@@ -168,10 +168,10 @@ export function AdminUsersSection() {
                       ))}
                     </select>
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     <span className={`badge ${STATUS_BADGE[u.status]}`}>{STATUS_LABEL[u.status]}</span>
                   </td>
-                  <td>
+                  <td data-label="Acciones">
                     <div className="item-row-actions">
                       <button
                         type="button"

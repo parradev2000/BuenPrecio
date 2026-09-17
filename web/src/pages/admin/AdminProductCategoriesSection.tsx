@@ -130,7 +130,7 @@ export function AdminProductCategoriesSection() {
                 <tr key={c.id}>
                   {editing?.id === c.id ? (
                     <>
-                      <td>
+                      <td data-label="Nombre">
                         <form id={`edit-${c.id}`} onSubmit={saveEdit}>
                           <Field
                             label="Nombre *"
@@ -141,8 +141,8 @@ export function AdminProductCategoriesSection() {
                           />
                         </form>
                       </td>
-                      <td className="hide-sm" />
-                      <td>
+                      <td className="hide-sm" data-label="Creada" />
+                      <td data-label="Acciones">
                         <div className="item-row-actions">
                           <button type="submit" form={`edit-${c.id}`} className="btn btn-primary btn-sm" disabled={busy || !editName.trim()}>
                             {busy ? '…' : 'Guardar'}
@@ -155,7 +155,7 @@ export function AdminProductCategoriesSection() {
                     </>
                   ) : (
                     <>
-                      <td>
+                      <td data-label="Nombre">
                         <span className="admin-cell-user">
                           <span className="avatar-initial">{c.name[0]?.toUpperCase() ?? 'N'}</span>
                           <span className="cell-meta">
@@ -166,8 +166,8 @@ export function AdminProductCategoriesSection() {
                           </span>
                         </span>
                       </td>
-                      <td className="cell-muted hide-sm">{new Date(c.createdAt).toLocaleDateString('es-CU')}</td>
-                      <td>
+                      <td className="cell-muted hide-sm" data-label="Creada">{new Date(c.createdAt).toLocaleDateString('es-CU')}</td>
+                      <td data-label="Acciones">
                         <div className="item-row-actions">
                           <button
                             type="button"

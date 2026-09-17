@@ -113,7 +113,7 @@ export function ApplicationsSection({ onReviewed }: { onReviewed?: () => void })
             <tbody>
               {paged.map((a) => (
                 <tr key={a.id}>
-                  <td>
+                  <td data-label="Solicitante">
                     <span className="admin-cell-user">
                       <span className="avatar-initial">{initials(a.userName)}</span>
                       <span className="cell-meta">
@@ -122,11 +122,11 @@ export function ApplicationsSection({ onReviewed }: { onReviewed?: () => void })
                       </span>
                     </span>
                   </td>
-                  <td className="cell-muted">{new Date(a.createdAt).toLocaleDateString('es-CU')}</td>
-                  <td className="hide-sm">
+                  <td className="cell-muted" data-label="Solicitada">{new Date(a.createdAt).toLocaleDateString('es-CU')}</td>
+                  <td className="hide-sm" data-label="Estado">
                     <span className={`badge ${STATUS_BADGE[a.status]}`}>{STATUS_LABEL[a.status]}</span>
                   </td>
-                  <td>
+                  <td data-label="Acciones">
                     {filter === 'pending' ? (
                       <div className="item-row-actions">
                         <button
