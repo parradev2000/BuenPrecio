@@ -15,6 +15,7 @@ type ItemForm = {
   unit: string;
   photoUrl: string;
   categoryId: string;
+  newCategoryName: string;
 };
 
 const INITIAL: ItemForm = {
@@ -25,6 +26,7 @@ const INITIAL: ItemForm = {
   unit: 'unidad',
   photoUrl: '',
   categoryId: '',
+  newCategoryName: '',
 };
 
 export function BusinessItemsPage() {
@@ -40,6 +42,7 @@ export function BusinessItemsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [editing, setEditing] = useState<BusinessItem | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [newCategory, setNewCategory] = useState(false);
 
   useEffect(() => {
     void load();
@@ -84,11 +87,13 @@ export function BusinessItemsPage() {
         setFormError('Escribe un precio mayor a 0');
         return;
       }
-      if (!form.categoryId) {
-        setFormError('Selecciona una categoría');
+      if (!form.categoryId && !(newCategory && form.newCategoryName.trim())) {
+        setFormError('Selecciona una categoría o crea una nueva');
         return;
       }
-      const body: Record<string, unknown> = { name: form.name, type: form.type, price, categoryId: form.categoryId };
+      const body: Record<string, unknown> = { name: form.name, type: form.type, price };
+      if (newCategory && form.newCategoryName.trim()) body.newCategoryName = form.newCategoryName.trim();
+      else body.categoryId = form.categoryId;
       if (form.description) body.description = form.description;
       else if (editing) body.description = null;
       if (form.type === 'producto') body.unit = form.unit || 'unidad';
@@ -102,6 +107,7 @@ export function BusinessItemsPage() {
       }
       setForm(INITIAL);
       setEditing(null);
+      setNewCategory(false);
       await load();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'No se pudo guardar el producto');
@@ -112,6 +118,7 @@ export function BusinessItemsPage() {
 
   function startEdit(item: BusinessItem) {
     setEditing(item);
+    setNewCategory(false);
     setForm({
       type: item.type,
       name: item.name,
@@ -120,12 +127,14 @@ export function BusinessItemsPage() {
       unit: item.unit ?? 'unidad',
       photoUrl: item.photoUrl ?? '',
       categoryId: item.categoryId ?? '',
+      newCategoryName: '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function cancelEdit() {
     setEditing(null);
+    setNewCategory(false);
     setForm(INITIAL);
   }
 
@@ -219,12 +228,40 @@ export function BusinessItemsPage() {
           )}
         </div>
         <Field label="Nombre *" value={form.name} onChange={(e) => setFormField('name', e.target.value)} maxLength={200} placeholder="Ej. Café con leche" />
-        <label className="field">
+        {newCategory ? (
+          <>
+            <Field
+              label="Nueva categoría *"
+              value={form.newCategoryName}
+              onChange={(e) => setFormField('newCategoryName', e.target.value)}
+              maxLength={60}
+              placeholder="Ej. Panadería"
+            />
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setNewCategory(false);
+                setFormField('newCategoryName', '');
+              }}
+            >
+              Elegir una categoría existente
+            </button>
+          </>
+        ) : (
+          <label className="field">
             <span className="field-label">Categoría *</span>
             <select
               className="field-input"
               value={form.categoryId}
-              onChange={(e) => setFormField('categoryId', e.target.value)}
+              onChange={(e) => {
+                if (e.target.value === '__new__') {
+                  setNewCategory(true);
+                  setFormField('categoryId', '');
+                } else {
+                  setFormField('categoryId', e.target.value);
+                }
+              }}
             >
               <option value="">Selecciona una categoría…</option>
               {productCategories.map((c) => (
@@ -232,8 +269,10 @@ export function BusinessItemsPage() {
                   {c.name}
                 </option>
               ))}
+              <option value="__new__">+ Crear nueva categoría…</option>
             </select>
           </label>
+        )}
         <Field label="Descripción" value={form.description} onChange={(e) => setFormField('description', e.target.value)} maxLength={500} />
         <label className="field">
             <span className="field-label">Foto del producto</span>
@@ -252,7 +291,7 @@ export function BusinessItemsPage() {
             </div>
           )}
         <Field label="Precio (CUP) *" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setFormField('price', e.target.value)} />
-        <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim() || !form.price || !form.categoryId}>
+        <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim() || !form.price || (!form.categoryId && !(newCategory && form.newCategoryName.trim()))}>
           {busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar producto'}
         </button>
       </form>

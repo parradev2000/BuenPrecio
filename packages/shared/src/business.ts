@@ -41,10 +41,12 @@ export const createItemSchema = z
     unit: z.enum(ITEM_UNITS as unknown as [string, ...string[]]).optional(),
     photoUrl: photoUrlSchema.optional(),
     categoryId: z.string().uuid('Categoría inválida').optional(),
+    newCategoryName: z.string().trim().min(1, 'Escribe el nombre de la categoría').max(60, 'El nombre de la categoría no puede superar 60 caracteres').optional(),
     available: z.boolean().default(true),
   })
   .superRefine((data, ctx) => {
-    if (data.categoryId == null) {
+    const hasNewCategory = data.newCategoryName != null && data.newCategoryName.trim() !== '';
+    if (data.categoryId == null && !hasNewCategory) {
       ctx.addIssue({ code: 'custom', message: 'Categoría inválida', path: ['categoryId'] });
     }
     if (data.type === 'servicio' && data.unit != null) {
@@ -70,6 +72,7 @@ export const updateItemSchema = z
     unit: z.enum(ITEM_UNITS as unknown as [string, ...string[]]).nullable().optional(),
     photoUrl: photoUrlSchema.nullable().optional(),
     categoryId: z.string().uuid('Categoría inválida').nullable().optional(),
+    newCategoryName: z.string().trim().min(1, 'Escribe el nombre de la categoría').max(60, 'El nombre de la categoría no puede superar 60 caracteres').optional(),
     available: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {

@@ -39,12 +39,25 @@ async function businessCategoryExists(categoryId: string | undefined) {
   return category?.kind === 'negocio';
 }
 
-async function productCategoryExists(categoryId: string | undefined) {
-  if (!categoryId) return true;
-  const category = await db.query.productCategories.findFirst({
-    where: eq(productCategories.id, categoryId),
-  });
-  return category != null;
+async function resolveProductCategory(
+  categoryId: string | null | undefined,
+  newCategoryName: string | null | undefined,
+) {
+  if (categoryId) {
+    return (
+      (await db.query.productCategories.findFirst({ where: eq(productCategories.id, categoryId) })) ?? null
+    );
+  }
+  if (newCategoryName) {
+    const name = newCategoryName.trim();
+    const existing = await db.query.productCategories.findFirst({ where: eq(productCategories.name, name) });
+    if (existing) {
+      return existing;
+    }
+    const [created] = await db.insert(productCategories).values({ name }).returning();
+    return created ?? null;
+  }
+  return null;
 }
 
 export async function businessRoutes(app: FastifyInstance) {
@@ -79,6 +92,8 @@ export async function businessRoutes(app: FastifyInstance) {
         photoUrl: businesses.photoUrl,
         categoryId: businesses.categoryId,
         categoryName: categories.name,
+        latitude: businesses.latitude,
+        longitude: businesses.longitude,
         active: businesses.active,
         createdAt: businesses.createdAt,
         updatedAt: businesses.updatedAt,
@@ -155,13 +170,21 @@ export async function businessRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
-    if (!(await productCategoryExists(parsed.data.categoryId))) {
+    const resolvedCategory = await resolveProductCategory(parsed.data.categoryId, parsed.data.newCategoryName);
+    if (!resolvedCategory) {
       return sendError(reply, 400, 'Categoría inválida');
     }
-    const values = pickDefined(parsed.data, ['description', 'unit', 'photoUrl', 'categoryId', 'available']);
+    const values = pickDefined(parsed.data, ['description', 'unit', 'photoUrl', 'available']);
     const [item] = await db
       .insert(businessItems)
-      .values({ businessId, type: parsed.data.type, name: parsed.data.name, price: parsed.data.price, ...values })
+      .values({
+        businessId,
+        type: parsed.data.type,
+        name: parsed.data.name,
+        price: parsed.data.price,
+        categoryId: resolvedCategory.id,
+        ...values,
+      })
       .returning();
     return reply.code(201).send({ item });
   });
@@ -189,16 +212,31 @@ export async function businessRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
-    if (!(await productCategoryExists(parsed.data.categoryId ?? undefined))) {
-      return sendError(reply, 400, 'Categoría inválida');
+    let categoryId = item.categoryId;
+    if (parsed.data.newCategoryName) {
+      const resolved = await resolveProductCategory(undefined, parsed.data.newCategoryName);
+      if (!resolved) {
+        return sendError(reply, 400, 'Categoría inválida');
+      }
+      categoryId = resolved.id;
+    } else if (parsed.data.categoryId !== undefined) {
+      if (parsed.data.categoryId === null) {
+        categoryId = null;
+      } else {
+        const resolved = await resolveProductCategory(parsed.data.categoryId, undefined);
+        if (!resolved) {
+          return sendError(reply, 400, 'Categoría inválida');
+        }
+        categoryId = resolved.id;
+      }
     }
-    if (Object.keys(parsed.data).length === 0) {
+    if (Object.keys(parsed.data).length === 0 && categoryId === item.categoryId) {
       return sendError(reply, 400, 'No hay campos para actualizar');
     }
-    const values = pickDefined(parsed.data, ['type', 'name', 'description', 'price', 'unit', 'photoUrl', 'categoryId', 'available']);
+    const values = pickDefined(parsed.data, ['type', 'name', 'description', 'price', 'unit', 'photoUrl', 'available']);
     const [updated] = await db
       .update(businessItems)
-      .set({ ...values, updatedAt: new Date() })
+      .set({ ...values, categoryId, updatedAt: new Date() })
       .where(eq(businessItems.id, item.id))
       .returning();
     return { item: updated };
