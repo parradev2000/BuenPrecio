@@ -3,8 +3,14 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { CatalogBusiness, Category } from '../api/types';
 import { EmptyState, Field, Loading } from '../components/ui';
+import { useSeo } from '../hooks/useSeo';
 
 export function CatalogPage() {
+  useSeo({
+    title: 'Catálogo de negocios - Buen Precio',
+    description:
+      'Explora negocios locales, sus productos y servicios, con precios visibles y categorías claras para comparar mejor.',
+  });
   const [businesses, setBusinesses] = useState<CatalogBusiness[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);

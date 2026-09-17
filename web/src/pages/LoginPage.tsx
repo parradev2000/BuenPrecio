@@ -5,8 +5,13 @@ import { zodError } from '../lib/zodError';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { Alert, Field } from '../components/ui';
+import { useSeo } from '../hooks/useSeo';
 
 export function LoginPage() {
+  useSeo({
+    title: 'Entrar - Buen Precio',
+    description: 'Inicia sesión en Buen Precio para gestionar tus negocios y catálogos.',
+  });
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');

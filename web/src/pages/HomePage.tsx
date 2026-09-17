@@ -1,8 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSeo } from '../hooks/useSeo';
 
 export function HomePage() {
   const { session } = useAuth();
+  useSeo({
+    title: 'Buen Precio - Encuentra y publica negocios locales con buenos precios',
+    description:
+      'Buen Precio es el catálogo de negocios locales: descubre productos y servicios cerca de ti con mejores precios. Publica tu negocio gratis.',
+  });
 
   return (
     <div className="home">

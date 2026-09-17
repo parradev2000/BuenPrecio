@@ -2,7 +2,7 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import { createReadStream, existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { sql } from 'drizzle-orm';
@@ -10,6 +10,7 @@ import Fastify from 'fastify';
 import { CURRENCY, ROLE_NAMES } from '@buenprecio/shared';
 import { checkDbConnection, db } from './db.js';
 import { env } from './env.js';
+import { injectSeo, seoViewForUrl } from './seo.js';
 import { UPLOADS_DIR } from './uploads.js';
 import { catalogRoutes } from './routes/catalog.js';
 import { authRoutes } from './routes/auth.js';
@@ -49,13 +50,15 @@ export async function buildApp() {
   await app.register(uploadRoutes, { prefix: '/api/v1' });
 
   if (env.NODE_ENV === 'production' && existsSync(SPA_DIR)) {
+    const indexHtml = readFileSync(resolve(SPA_DIR, 'index.html'), 'utf8');
     await app.register(fastifyStatic, { root: SPA_DIR, prefix: '/', decorateReply: false });
-    app.setNotFoundHandler((request, reply) => {
+    app.setNotFoundHandler(async (request, reply) => {
       if (request.url.startsWith('/api/') || request.url.startsWith('/uploads/')) {
         return reply.code(404).send({ message: 'Not found' });
       }
+      const view = await seoViewForUrl(request.url);
       reply.type('text/html');
-      return reply.send(createReadStream(resolve(SPA_DIR, 'index.html')));
+      return reply.send(injectSeo(indexHtml, view));
     });
   }
 

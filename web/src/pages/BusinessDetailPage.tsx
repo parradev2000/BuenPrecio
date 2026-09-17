@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { CatalogBusinessDetail } from '../api/types';
 import { formatPrice } from '../lib/format';
 import { EmptyState, Loading } from '../components/ui';
+import { useSeo } from '../hooks/useSeo';
 
 export function BusinessDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,14 @@ export function BusinessDetailPage() {
       .then((res) => setBusiness(res.business))
       .catch((e) => setError(e instanceof Error ? e.message : 'No se pudo cargar'));
   }, [id]);
+
+  useSeo({
+    title: business
+      ? `${business.name} - Buen Precio`
+      : 'Negocio - Buen Precio',
+    description: business?.description ?? `${business?.name ?? 'Negocio'} en el catálogo de Buen Precio.`,
+    image: business?.photoUrl,
+  });
 
   if (error) {
     return <p className="alert alert-error">{error}</p>;

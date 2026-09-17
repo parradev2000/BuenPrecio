@@ -5,8 +5,14 @@ import { zodError } from '../lib/zodError';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { Alert, Field } from '../components/ui';
+import { useSeo } from '../hooks/useSeo';
 
 export function RegisterPage() {
+  useSeo({
+    title: 'Crear cuenta - Buen Precio',
+    description:
+      'Crea tu cuenta gratuita en Buen Precio y publica tu negocio con su catálogo de productos y servicios.',
+  });
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
