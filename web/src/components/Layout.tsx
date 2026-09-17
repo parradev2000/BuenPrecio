@@ -111,7 +111,7 @@ export function Layout() {
                 <NavLink to="/entrar" className={navLinkClass}>
                   Entrar
                 </NavLink>
-                <Link to="/registro" className="btn btn-primary btn-sm">
+                <Link to="/registro" className="btn btn-primary btn-sm header-cta">
                   Crear cuenta
                 </Link>
               </>
