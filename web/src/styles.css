@@ -646,9 +646,12 @@ a.grid-item:hover {
   .nav {
     justify-content: flex-start;
   }
+  .dropdown {
+    margin-left: auto;
+  }
   .dropdown-menu {
-    right: auto;
-    left: 0;
+    right: 0;
+    left: auto;
   }
   .item-row {
     flex-direction: column;
