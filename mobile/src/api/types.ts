@@ -72,6 +72,7 @@ export type BusinessItem = {
   price: number;
   unit: ItemUnit | null;
   photoUrl: string | null;
+  categoryId: string | null;
   available: boolean;
 };
 
@@ -79,6 +80,11 @@ export type Category = {
   id: string;
   name: string;
   kind: CategoryKind;
+};
+
+export type ProductCategory = {
+  id: string;
+  name: string;
 };
 
 export type Application = {

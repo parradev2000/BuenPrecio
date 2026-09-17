@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import type { CatalogBusiness, CatalogProduct, Category } from '../api/types';
+import type { CatalogBusiness, CatalogProduct, Category, ProductCategory } from '../api/types';
 import { EmptyState, Field, Loading } from '../components/ui';
 import { useSeo } from '../hooks/useSeo';
 import { useUserLocation } from '../hooks/useUserLocation';
@@ -45,7 +45,7 @@ export function CatalogPage() {
 
 function ProductsCatalog() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -73,10 +73,10 @@ function ProductsCatalog() {
       }
       const [productsRes, cats] = await Promise.all([
         api<{ items: CatalogProduct[] }>(`/catalog/products?${params.toString()}`),
-        api<{ items: Category[] }>('/categories'),
+        api<{ items: ProductCategory[] }>('/product-categories'),
       ]);
       setProducts(productsRes.items);
-      setCategories(cats.items.filter((c) => c.kind === 'item'));
+      setCategories(cats.items);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar el catálogo');

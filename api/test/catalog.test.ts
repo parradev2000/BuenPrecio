@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { db } from '../src/db.js';
-import { businessItems, businesses, categories, users } from '../src/schema.js';
+import { businessItems, businesses, categories, productCategories, users } from '../src/schema.js';
 import { truncateAll } from './helpers.js';
 
 const BASE = '/api/v1';
@@ -15,8 +15,8 @@ async function seedCatalog() {
     .values({ name: 'Alimentos', kind: 'negocio' })
     .returning();
   const [catItem] = await db
-    .insert(categories)
-    .values({ name: 'Repostería', kind: 'item' })
+    .insert(productCategories)
+    .values({ name: 'Repostería' })
     .returning();
   const [owner] = await db
     .insert(users)

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { and, asc, count, eq, ilike, inArray, sql } from 'drizzle-orm';
-import { businessItems, businesses, categories } from '../schema.js';
+import { businessItems, businesses, categories, productCategories } from '../schema.js';
 import { db } from '../db.js';
 import { sendError } from '../lib/errors.js';
 
@@ -52,7 +52,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         price: businessItems.price,
         unit: businessItems.unit,
         photoUrl: businessItems.photoUrl,
-        categoryName: categories.name,
+categoryName: productCategories.name,
         businessId: businesses.id,
         businessName: businesses.name,
         businessAddress: businesses.address,
@@ -62,7 +62,7 @@ export async function catalogRoutes(app: FastifyInstance) {
       })
       .from(businessItems)
       .innerJoin(businesses, eq(businessItems.businessId, businesses.id))
-      .leftJoin(categories, eq(businessItems.categoryId, categories.id))
+      .leftJoin(productCategories, eq(businessItems.categoryId, productCategories.id))
       .where(and(...conditions))
       .orderBy(useDistance ? asc(distanceExpr) : businessItems.name)
       .limit(limit);
@@ -87,7 +87,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         price: businessItems.price,
         unit: businessItems.unit,
         photoUrl: businessItems.photoUrl,
-        categoryName: categories.name,
+categoryName: productCategories.name,
         businessId: businesses.id,
         businessName: businesses.name,
         businessAddress: businesses.address,
@@ -99,7 +99,7 @@ export async function catalogRoutes(app: FastifyInstance) {
       })
       .from(businessItems)
       .innerJoin(businesses, eq(businessItems.businessId, businesses.id))
-      .leftJoin(categories, eq(businessItems.categoryId, categories.id))
+      .leftJoin(productCategories, eq(businessItems.categoryId, productCategories.id))
       .where(and(eq(businessItems.id, id), eq(businessItems.available, true), eq(businesses.active, true)))
       .limit(1);
 
@@ -131,7 +131,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         photoUrl: businesses.photoUrl,
         latitude: businesses.latitude,
         longitude: businesses.longitude,
-        categoryId: businesses.categoryId,
+categoryId: businesses.categoryId,
         categoryName: categories.name,
       })
       .from(businesses)
@@ -171,7 +171,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         photoUrl: businesses.photoUrl,
         latitude: businesses.latitude,
         longitude: businesses.longitude,
-        categoryId: businesses.categoryId,
+categoryId: businesses.categoryId,
         categoryName: categories.name,
       })
       .from(businesses)
@@ -192,10 +192,10 @@ export async function catalogRoutes(app: FastifyInstance) {
         unit: businessItems.unit,
         photoUrl: businessItems.photoUrl,
         categoryId: businessItems.categoryId,
-        categoryName: categories.name,
+categoryName: productCategories.name,
       })
       .from(businessItems)
-      .leftJoin(categories, eq(businessItems.categoryId, categories.id))
+      .leftJoin(productCategories, eq(businessItems.categoryId, productCategories.id))
       .where(and(eq(businessItems.businessId, id), eq(businessItems.available, true)))
       .orderBy(businessItems.name);
 

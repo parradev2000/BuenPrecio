@@ -39,11 +39,14 @@ export const createItemSchema = z
       .positive('El precio debe ser mayor a 0')
       .max(999_999_999, 'El precio es demasiado alto'),
     unit: z.enum(ITEM_UNITS as unknown as [string, ...string[]]).optional(),
-photoUrl: photoUrlSchema.optional(),
-categoryId: z.string().uuid('Tipo de negocio inválido').optional(),
+    photoUrl: photoUrlSchema.optional(),
+    categoryId: z.string().uuid('Categoría inválida').optional(),
     available: z.boolean().default(true),
   })
   .superRefine((data, ctx) => {
+    if (data.categoryId == null) {
+      ctx.addIssue({ code: 'custom', message: 'Categoría inválida', path: ['categoryId'] });
+    }
     if (data.type === 'servicio' && data.unit != null) {
       ctx.addIssue({ code: 'custom', message: 'Los servicios no llevan unidad', path: ['unit'] });
     }
@@ -66,7 +69,7 @@ export const updateItemSchema = z
       .optional(),
     unit: z.enum(ITEM_UNITS as unknown as [string, ...string[]]).nullable().optional(),
     photoUrl: photoUrlSchema.nullable().optional(),
-    categoryId: z.string().uuid('Tipo de negocio inválido').nullable().optional(),
+    categoryId: z.string().uuid('Categoría inválida').nullable().optional(),
     available: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {

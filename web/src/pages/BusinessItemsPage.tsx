@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
-import type { Business, BusinessItem, ItemType } from '../api/types';
+import type { Business, BusinessItem, ItemType, ProductCategory } from '../api/types';
 import { formatPrice } from '../lib/format';
 import { Alert, EmptyState, Field, Loading } from '../components/ui';
 
@@ -14,14 +14,24 @@ type ItemForm = {
   price: string;
   unit: string;
   photoUrl: string;
+  categoryId: string;
 };
 
-const INITIAL: ItemForm = { type: 'producto', name: '', description: '', price: '', unit: 'unidad', photoUrl: '' };
+const INITIAL: ItemForm = {
+  type: 'producto',
+  name: '',
+  description: '',
+  price: '',
+  unit: 'unidad',
+  photoUrl: '',
+  categoryId: '',
+};
 
 export function BusinessItemsPage() {
   const { id } = useParams<{ id: string }>();
   const [business, setBusiness] = useState<Business | null>(null);
   const [items, setItems] = useState<BusinessItem[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,9 +49,13 @@ export function BusinessItemsPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await api<{ business: Business & { items: BusinessItem[] } }>(`/businesses/${id}`, { auth: true });
+      const [res, cats] = await Promise.all([
+        api<{ business: Business & { items: BusinessItem[] } }>(`/businesses/${id}`, { auth: true }),
+        api<{ items: ProductCategory[] }>('/product-categories'),
+      ]);
       setBusiness(res.business);
       setItems(res.business.items ?? []);
+      setProductCategories(cats.items);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar');
@@ -70,7 +84,11 @@ export function BusinessItemsPage() {
         setFormError('Escribe un precio mayor a 0');
         return;
       }
-      const body: Record<string, unknown> = { name: form.name, type: form.type, price };
+      if (!form.categoryId) {
+        setFormError('Selecciona una categoría');
+        return;
+      }
+      const body: Record<string, unknown> = { name: form.name, type: form.type, price, categoryId: form.categoryId };
       if (form.description) body.description = form.description;
       else if (editing) body.description = null;
       if (form.type === 'producto') body.unit = form.unit || 'unidad';
@@ -101,6 +119,7 @@ export function BusinessItemsPage() {
       price: String(item.price),
       unit: item.unit ?? 'unidad',
       photoUrl: item.photoUrl ?? '',
+      categoryId: item.categoryId ?? '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -200,6 +219,21 @@ export function BusinessItemsPage() {
           )}
         </div>
         <Field label="Nombre *" value={form.name} onChange={(e) => setFormField('name', e.target.value)} maxLength={200} placeholder="Ej. Café con leche" />
+        <label className="field">
+            <span className="field-label">Categoría *</span>
+            <select
+              className="field-input"
+              value={form.categoryId}
+              onChange={(e) => setFormField('categoryId', e.target.value)}
+            >
+              <option value="">Selecciona una categoría…</option>
+              {productCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
         <Field label="Descripción" value={form.description} onChange={(e) => setFormField('description', e.target.value)} maxLength={500} />
         <label className="field">
             <span className="field-label">Foto del producto</span>
@@ -218,7 +252,7 @@ export function BusinessItemsPage() {
             </div>
           )}
         <Field label="Precio (CUP) *" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setFormField('price', e.target.value)} />
-        <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim() || !form.price}>
+        <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim() || !form.price || !form.categoryId}>
           {busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar producto'}
         </button>
       </form>

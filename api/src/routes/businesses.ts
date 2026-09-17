@@ -9,7 +9,7 @@ import {
 import { db } from '../db.js';
 import { sendError } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
-import { businessItems, businesses, categories, type Business } from '../schema.js';
+import { businessItems, businesses, categories, productCategories, type Business } from '../schema.js';
 
 function pickDefined(obj: Record<string, unknown>, keys: readonly string[]) {
   return Object.fromEntries(keys.filter((key) => obj[key] !== undefined).map((key) => [key, obj[key]]));
@@ -33,10 +33,18 @@ async function ownedBusiness(
   return business;
 }
 
-async function categoryExists(kind: 'negocio' | 'item', categoryId: string | undefined) {
+async function businessCategoryExists(categoryId: string | undefined) {
   if (!categoryId) return true;
   const category = await db.query.categories.findFirst({ where: eq(categories.id, categoryId) });
-  return category?.kind === kind;
+  return category?.kind === 'negocio';
+}
+
+async function productCategoryExists(categoryId: string | undefined) {
+  if (!categoryId) return true;
+  const category = await db.query.productCategories.findFirst({
+    where: eq(productCategories.id, categoryId),
+  });
+  return category != null;
 }
 
 export async function businessRoutes(app: FastifyInstance) {
@@ -47,7 +55,7 @@ export async function businessRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
-    if (!(await categoryExists('negocio', parsed.data.categoryId))) {
+    if (!(await businessCategoryExists(parsed.data.categoryId))) {
       return sendError(reply, 400, 'Tipo de negocio inválido');
     }
     const values = pickDefined(parsed.data, ['description', 'categoryId', 'address', 'phone', 'latitude', 'longitude', 'photoUrl']);
@@ -112,7 +120,7 @@ export async function businessRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
-    if (!(await categoryExists('negocio', parsed.data.categoryId))) {
+    if (!(await businessCategoryExists(parsed.data.categoryId))) {
       return sendError(reply, 400, 'Tipo de negocio inválido');
     }
     if (Object.keys(parsed.data).length === 0) {
@@ -147,8 +155,8 @@ export async function businessRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
-    if (!(await categoryExists('item', parsed.data.categoryId))) {
-      return sendError(reply, 400, 'Tipo de negocio inválido');
+    if (!(await productCategoryExists(parsed.data.categoryId))) {
+      return sendError(reply, 400, 'Categoría inválida');
     }
     const values = pickDefined(parsed.data, ['description', 'unit', 'photoUrl', 'categoryId', 'available']);
     const [item] = await db
@@ -181,8 +189,8 @@ export async function businessRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
     }
-    if (!(await categoryExists('item', parsed.data.categoryId ?? undefined))) {
-      return sendError(reply, 400, 'Tipo de negocio inválido');
+    if (!(await productCategoryExists(parsed.data.categoryId ?? undefined))) {
+      return sendError(reply, 400, 'Categoría inválida');
     }
     if (Object.keys(parsed.data).length === 0) {
       return sendError(reply, 400, 'No hay campos para actualizar');

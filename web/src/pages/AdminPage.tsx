@@ -4,15 +4,17 @@ import { api } from '../api/client';
 import type { AdminApplicationRow } from '../api/types';
 import { AdminBusinessesSection } from './admin/AdminBusinessesSection';
 import { AdminCategoriesSection } from './admin/AdminCategoriesSection';
+import { AdminProductCategoriesSection } from './admin/AdminProductCategoriesSection';
 import { AdminUsersSection } from './admin/AdminUsersSection';
 import { ApplicationsSection } from './admin/ApplicationsSection';
 
-type TabKey = 'aplicaciones' | 'usuarios' | 'categorias' | 'negocios';
+type TabKey = 'aplicaciones' | 'usuarios' | 'categorias' | 'productos-categorias' | 'negocios';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'aplicaciones', label: 'Solicitudes' },
   { key: 'usuarios', label: 'Usuarios' },
   { key: 'categorias', label: 'Tipos de negocio' },
+  { key: 'productos-categorias', label: 'Categorías de producto' },
   { key: 'negocios', label: 'Negocios' },
 ];
 
@@ -37,6 +39,7 @@ export function AdminPage() {
     aplicaciones: <ApplicationsSection onReviewed={() => void refreshPending()} />,
     usuarios: <AdminUsersSection />,
     categorias: <AdminCategoriesSection />,
+    'productos-categorias': <AdminProductCategoriesSection />,
     negocios: <AdminBusinessesSection />,
   };
 

@@ -42,3 +42,29 @@ export const updateCategorySchema = z
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
+
+export const createProductCategorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Escribe el nombre de la categoría')
+    .max(100, 'El nombre no puede superar 100 caracteres'),
+});
+
+export const updateProductCategorySchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Escribe el nombre de la categoría')
+      .max(100, 'El nombre no puede superar 100 caracteres')
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (Object.keys(data).length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'No hay campos para actualizar' });
+    }
+  });
+
+export type CreateProductCategoryInput = z.infer<typeof createProductCategorySchema>;
+export type UpdateProductCategoryInput = z.infer<typeof updateProductCategorySchema>;

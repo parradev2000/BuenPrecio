@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../src/api/client';
-import type { CatalogBusiness, CatalogProduct, Category } from '../src/api/types';
+import type { CatalogBusiness, CatalogProduct, Category, ProductCategory } from '../src/api/types';
 import { useAuth } from '../src/context/AuthContext';
 import { type LocationStatus, useUserLocation } from '../src/hooks/useUserLocation';
 import { COLORS, formatDistance, formatPrice, mediaUrl } from '../src/lib/format';
@@ -46,7 +46,7 @@ export default function CatalogScreen() {
 function ProductsCatalog() {
   const router = useRouter();
   const [items, setItems] = useState<CatalogProduct[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -64,10 +64,10 @@ function ProductsCatalog() {
       }
       const [productsRes, cats] = await Promise.all([
         api<{ items: CatalogProduct[] }>(`/catalog/products?${params.toString()}`),
-        api<{ items: Category[] }>('/categories'),
+        api<{ items: ProductCategory[] }>('/product-categories'),
       ]);
       setItems(productsRes.items);
-      setCategories(cats.items.filter((c) => c.kind === 'item'));
+      setCategories(cats.items);
     } catch {
       setItems([]);
     } finally {
