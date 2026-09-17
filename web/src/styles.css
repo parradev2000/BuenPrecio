@@ -642,12 +642,15 @@ a.grid-item:hover {
   .header-inner {
     flex-direction: column;
     align-items: flex-start;
+    position: relative;
   }
   .nav {
     justify-content: flex-start;
   }
   .dropdown {
-    margin-left: auto;
+    position: absolute;
+    top: calc(0.7rem - 2px);
+    right: clamp(1.25rem, 4vw, 3rem);
   }
   .dropdown-menu {
     right: 0;
