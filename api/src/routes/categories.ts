@@ -3,7 +3,7 @@ import { count, eq } from 'drizzle-orm';
 import { createCategorySchema, updateCategorySchema } from '@buenprecio/shared';
 import { db } from '../db.js';
 import { sendError } from '../lib/errors.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { requireRole } from '../middleware/auth.js';
 import { businessItems, businesses, categories } from '../schema.js';
 
 async function isInUse(categoryId: string): Promise<boolean> {
@@ -26,7 +26,7 @@ export async function categoryRoutes(app: FastifyInstance) {
     return { items: rows, total: rows.length };
   });
 
-  app.post('/categories', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/categories', adminOnly, async (request, reply) => {
     const parsed = createCategorySchema.safeParse(request.body);
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
@@ -56,15 +56,17 @@ export async function categoryRoutes(app: FastifyInstance) {
     if (values.kind && values.kind !== target.kind && (await isInUse(target.id))) {
       return sendError(reply, 409, 'El tipo de negocio está en uso y no puede cambiar de tipo');
     }
-    const name = values.name ?? target.name;
-    const kind = values.kind ?? target.kind;
-    if (name !== target.name || kind !== target.kind) {
-      const duplicate = await db.query.categories.findFirst({
-        where: (categories, { and, eq: equals, ne }) =>
-          and(eq(categories.kind, kind), equals(categories.name, name), ne(categories.id, target.id)),
+    if (values.name && values.name !== target.name) {
+      const nextName = values.name;
+      const existing = await db.query.categories.findFirst({
+        where: (categories, { and }) =>
+          and(
+            eq(categories.kind, values.kind ?? target.kind),
+            eq(categories.name, nextName),
+          ),
       });
-      if (duplicate) {
-        return sendError(reply, 409, 'Ya existe una categoría con ese nombre');
+      if (existing) {
+        return sendError(reply, 409, 'El tipo de negocio ya existe');
       }
     }
     const [updated] = await db

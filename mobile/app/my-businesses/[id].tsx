@@ -29,6 +29,8 @@ export default function BusinessItemsScreen() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [categoryId, setCategoryId] = useState('');
+  const [newCategoryOpen, setNewCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -66,14 +68,16 @@ export default function BusinessItemsScreen() {
       setError('Escribe nombre y un precio mayor a 0');
       return;
     }
-    if (!categoryId) {
-      setError('Selecciona una categoría');
+    if (!categoryId && !(newCategoryOpen && newCategoryName.trim())) {
+      setError('Selecciona una categoría o crea una nueva');
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      const body: Record<string, unknown> = { type, name: name.trim(), price: parsedPrice, categoryId };
+      const body: Record<string, unknown> = { type, name: name.trim(), price: parsedPrice };
+      if (newCategoryOpen && newCategoryName.trim()) body.newCategoryName = newCategoryName.trim();
+      else body.categoryId = categoryId;
       if (type === 'producto') {
         body.unit = unit || 'unidad';
       } else {
@@ -91,6 +95,8 @@ export default function BusinessItemsScreen() {
       setPhotoUrl('');
       setPhotoPreview(null);
       setCategoryId('');
+      setNewCategoryOpen(false);
+      setNewCategoryName('');
       setEditing(null);
       setFormOpen(false);
       await load();
@@ -110,6 +116,8 @@ export default function BusinessItemsScreen() {
     setPhotoUrl(item.photoUrl ?? '');
     setPhotoPreview(null);
     setCategoryId(item.categoryId ?? '');
+    setNewCategoryOpen(false);
+    setNewCategoryName('');
     setFormOpen(true);
     setError(null);
   }
@@ -222,12 +230,33 @@ export default function BusinessItemsScreen() {
               <Pressable
                 key={c.id}
                 style={[styles.unitBtn, categoryId === c.id && styles.unitBtnActive]}
-                onPress={() => setCategoryId(c.id)}
+                onPress={() => {
+                  setCategoryId(c.id);
+                  setNewCategoryOpen(false);
+                }}
               >
                 <Text style={[styles.unitText, categoryId === c.id && styles.unitTextActive]}>{c.name}</Text>
               </Pressable>
             ))}
+            <Pressable
+              style={[styles.unitBtn, newCategoryOpen && styles.unitBtnActive]}
+              onPress={() => {
+                setNewCategoryOpen((v) => !v);
+                setCategoryId('');
+                setNewCategoryName('');
+              }}
+            >
+              <Text style={[styles.unitText, newCategoryOpen && styles.unitTextActive]}>+ Nueva</Text>
+            </Pressable>
           </View>
+          {newCategoryOpen && (
+            <TextField
+              label="Nueva categoría *"
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+              placeholder="Ej. Panadería"
+            />
+          )}
           <TextField
             label="Precio (CUP) *"
             value={price}

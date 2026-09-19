@@ -14,6 +14,7 @@ export function ProducerPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Business | null>(null);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -57,27 +58,75 @@ export function ProducerPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function createBusiness(e: FormEvent) {
+  const EMPTY_FORM = { name: '', description: '', address: '', phone: '', categoryId: '', photoUrl: '' };
+
+  function resetForm() {
+    setForm(EMPTY_FORM);
+    setCoords({});
+    setShowMap(false);
+    setShowNewCat(false);
+    setNewCatName('');
+    setEditing(null);
+  }
+
+  function toggleForm() {
+    if (showForm) {
+      resetForm();
+      setShowForm(false);
+      setFormError(null);
+    } else {
+      resetForm();
+      setShowForm(true);
+    }
+  }
+
+  function startEdit(business: Business) {
+    setEditing(business);
+    setForm({
+      name: business.name,
+      description: business.description ?? '',
+      address: business.address ?? '',
+      phone: business.phone ?? '',
+      categoryId: business.categoryId ?? '',
+      photoUrl: business.photoUrl ?? '',
+    });
+    setCoords({
+      latitude: business.latitude ?? undefined,
+      longitude: business.longitude ?? undefined,
+    });
+    setShowMap(false);
+    setShowNewCat(false);
+    setFormError(null);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function saveBusiness(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setFormError(null);
     try {
       const body: Record<string, string | number> = { name: form.name };
-      if (form.description) body.description = form.description;
-      if (form.address) body.address = form.address;
-      if (form.phone) body.phone = form.phone;
+      if (form.description || editing) body.description = form.description;
+      if (form.address || editing) body.address = form.address;
+      if (form.phone || editing) body.phone = form.phone;
       if (form.categoryId) body.categoryId = form.categoryId;
       if (form.photoUrl.trim()) body.photoUrl = form.photoUrl.trim();
       if (coords.latitude !== undefined) body.latitude = coords.latitude;
       if (coords.longitude !== undefined) body.longitude = coords.longitude;
-      const res = await api<{ business: Business }>('/businesses', { method: 'POST', body, auth: true });
-      setShowForm(false);
-      setForm({ name: '', description: '', address: '', phone: '', categoryId: '', photoUrl: '' });
-      setCoords({});
-      setShowMap(false);
-      navigate(`/mis-negocios/${res.business.id}`);
+      if (editing) {
+        await api(`/businesses/${editing.id}`, { method: 'PATCH', body, auth: true });
+        setShowForm(false);
+        resetForm();
+        await load();
+      } else {
+        const res = await api<{ business: Business }>('/businesses', { method: 'POST', body, auth: true });
+        setShowForm(false);
+        resetForm();
+        navigate(`/mis-negocios/${res.business.id}`);
+      }
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : 'No se pudo crear el negocio');
+      setFormError(e instanceof Error ? e.message : editing ? 'No se pudo guardar el negocio' : 'No se pudo crear el negocio');
     } finally {
       setBusy(false);
     }
@@ -159,7 +208,7 @@ export function ProducerPage() {
     <div className="page">
       <div className="page-header">
         <h1>Mis negocios</h1>
-        <button type="button" className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
+        <button type="button" className="btn btn-primary" onClick={toggleForm}>
           {showForm ? 'Cancelar' : 'Nuevo negocio'}
         </button>
       </div>
@@ -167,8 +216,8 @@ export function ProducerPage() {
       {error && <Alert kind="error">{error}</Alert>}
 
       {showForm && (
-        <form onSubmit={createBusiness} className="form card">
-          <h2>Nuevo negocio</h2>
+        <form onSubmit={saveBusiness} className="form card">
+          <h2>{editing ? 'Editar negocio' : 'Nuevo negocio'}</h2>
           {formError && <Alert kind="error">{formError}</Alert>}
           <Field label="Nombre *" value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={200} placeholder="Ej. Cafetería La Esquina" />
           <Field label="Descripción" value={form.description} onChange={(e) => set('description', e.target.value)} maxLength={500} />
@@ -240,7 +289,7 @@ export function ProducerPage() {
           )}
           {catError && <Alert kind="error">{catError}</Alert>}
           <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim()}>
-            {busy ? 'Creando…' : 'Crear negocio'}
+            {busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear negocio'}
           </button>
         </form>
       )}
@@ -250,7 +299,7 @@ export function ProducerPage() {
         <EmptyState
           message="Aún no tienes negocios. ¡Crea el primero!"
           action={
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => { resetForm(); setShowForm(true); }}>
               Crear negocio
             </button>
           }
@@ -267,6 +316,9 @@ export function ProducerPage() {
               <Link to={`/mis-negocios/${b.id}`} className="btn btn-secondary btn-sm">
                 Gestionar
               </Link>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEdit(b)}>
+                Editar
+              </button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => void toggleActive(b)}>
                 {b.active ? 'Desactivar' : 'Activar'}
               </button>

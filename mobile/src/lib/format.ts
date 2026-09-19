@@ -32,4 +32,27 @@ export const COLORS = {
   primaryDark: '#08663e',
   danger: '#c0302b',
   dangerDark: '#a52925',
+  successBg: '#e7f6ee',
+  successFg: '#08663e',
+  warningBg: '#fdf3e0',
+  warningFg: '#8a5a00',
+  dangerBg: '#fdecec',
+  dangerFg: '#a52925',
+  neutralBg: '#eef0f3',
+  neutralFg: '#5a6572',
 };
+
+export type BadgeTone = 'success' | 'warning' | 'danger' | 'neutral';
+
+export function badgeColors(tone: BadgeTone) {
+  switch (tone) {
+    case 'success':
+      return { bg: COLORS.successBg, fg: COLORS.successFg };
+    case 'warning':
+      return { bg: COLORS.warningBg, fg: COLORS.warningFg };
+    case 'danger':
+      return { bg: COLORS.dangerBg, fg: COLORS.dangerFg };
+    case 'neutral':
+      return { bg: COLORS.neutralBg, fg: COLORS.neutralFg };
+  }
+}

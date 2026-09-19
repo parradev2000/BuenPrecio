@@ -12,7 +12,16 @@ import { db } from '../db.js';
 import { sendError } from '../lib/errors.js';
 import { toSafeApplication } from '../lib/application.js';
 import { requireRole } from '../middleware/auth.js';
-import { businessItems, businesses, priceReports, producerApplications, refreshTokens, users } from '../schema.js';
+import {
+  businessItems,
+  businesses,
+  categories,
+  priceReports,
+  producerApplications,
+  productCategories,
+  refreshTokens,
+  users,
+} from '../schema.js';
 
 function pickDefined(obj: Record<string, unknown>, keys: readonly string[]) {
   return Object.fromEntries(keys.filter((key) => obj[key] !== undefined).map((key) => [key, obj[key]]));
@@ -248,5 +257,64 @@ export async function adminRoutes(app: FastifyInstance) {
       .where(eq(producerApplications.id, application.id))
       .returning();
     return { application: toSafeApplication(updated) };
+  });
+
+  app.get('/admin/stats', adminOnly, async () => {
+    const [totalBusinesses, totalProducts, totalServices, byBusinessRows, businessesByCategory, productsByCategory] =
+      await Promise.all([
+        db.select({ value: count() }).from(businesses),
+        db.select({ value: count() }).from(businessItems).where(eq(businessItems.type, 'producto')),
+        db.select({ value: count() }).from(businessItems).where(eq(businessItems.type, 'servicio')),
+        db
+          .select({
+            businessId: businessItems.businessId,
+            name: businesses.name,
+            type: businessItems.type,
+            count: count(),
+          })
+          .from(businessItems)
+          .innerJoin(businesses, eq(businessItems.businessId, businesses.id))
+          .groupBy(businessItems.businessId, businesses.name, businessItems.type),
+        db
+          .select({ name: categories.name, count: count() })
+          .from(businesses)
+          .leftJoin(categories, eq(businesses.categoryId, categories.id))
+          .groupBy(categories.id, categories.name),
+        db
+          .select({ name: productCategories.name, count: count() })
+          .from(businessItems)
+          .leftJoin(productCategories, eq(businessItems.categoryId, productCategories.id))
+          .groupBy(productCategories.id, productCategories.name),
+      ]);
+
+    const countsByBusiness = new Map<string, { products: number; services: number }>();
+    for (const row of byBusinessRows) {
+      const current = countsByBusiness.get(row.businessId) ?? { products: 0, services: 0 };
+      if (row.type === 'producto') current.products = row.count;
+      if (row.type === 'servicio') current.services = row.count;
+      countsByBusiness.set(row.businessId, current);
+    }
+
+    const allBusinesses = await db.select({ id: businesses.id, name: businesses.name }).from(businesses);
+
+    return {
+      totals: {
+        businesses: totalBusinesses[0].value,
+        products: totalProducts[0].value,
+        services: totalServices[0].value,
+      },
+      byBusiness: allBusinesses
+        .map((b) => {
+          const current = countsByBusiness.get(b.id) ?? { products: 0, services: 0 };
+          return { name: b.name, products: current.products, services: current.services };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      businessesByCategory: businessesByCategory
+        .map((row) => ({ name: row.name ?? 'Sin categoría', count: row.count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+      productsByCategory: productsByCategory
+        .map((row) => ({ name: row.name ?? 'Sin categoría', count: row.count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    };
   });
 }

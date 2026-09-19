@@ -45,8 +45,13 @@ export function AdminPage() {
 
   return (
     <div className="page">
-      <h1>Administración</h1>
-      <div className="tabs">
+      <div className="admin-head">
+        <div>
+          <h1>Administración</h1>
+          <p className="admin-sub">Usuarios, negocios, categorías y solicitudes de productores.</p>
+        </div>
+      </div>
+      <div className="tabs admin-tabs">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -59,7 +64,7 @@ export function AdminPage() {
           </button>
         ))}
       </div>
-      {content[tab]}
+      <div className="admin-main">{content[tab]}</div>
     </div>
   );
 }

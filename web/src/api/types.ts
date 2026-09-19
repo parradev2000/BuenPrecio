@@ -63,6 +63,8 @@ export type Business = {
   photoUrl: string | null;
   categoryId: string | null;
   categoryName: string | null;
+  latitude: number | null;
+  longitude: number | null;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -139,4 +141,15 @@ export type AdminBusiness = {
   ownerName: string;
   ownerEmail: string;
   itemsCount: number;
+};
+
+export type AdminStats = {
+  totals: {
+    businesses: number;
+    products: number;
+    services: number;
+  };
+  byBusiness: { name: string; products: number; services: number }[];
+  businessesByCategory: { name: string; count: number }[];
+  productsByCategory: { name: string; count: number }[];
 };

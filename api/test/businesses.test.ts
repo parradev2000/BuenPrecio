@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { eq } from 'drizzle-orm';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { db } from '../src/db.js';
@@ -342,6 +343,71 @@ describe('ítems (productor)', () => {
     });
     expect(badCat.statusCode).toBe(400);
     expect(badCat.json().message).toBe('Categoría inválida');
+  });
+
+  it('crea una categoría nueva al crear un producto', async () => {
+    const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const createBiz = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses`,
+      headers: auth(producer.accessToken),
+      payload: { name: 'Tienda' },
+    });
+    const businessId = createBiz.json().business.id;
+
+    const create = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses/${businessId}/items`,
+      headers: auth(producer.accessToken),
+      payload: { type: 'producto', name: 'Pan', price: 50, unit: 'unidad', newCategoryName: 'Panadería' },
+    });
+    expect(create.statusCode).toBe(201);
+    const createdCategory = await db.query.productCategories.findFirst({
+      where: eq(productCategories.name, 'Panadería'),
+    });
+    expect(createdCategory).toBeTruthy();
+    expect(create.json().item.categoryId).toBe(createdCategory!.id);
+
+    const again = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses/${businessId}/items`,
+      headers: auth(producer.accessToken),
+      payload: { type: 'producto', name: 'Croissant', price: 80, unit: 'unidad', newCategoryName: 'Panadería' },
+    });
+    expect(again.statusCode).toBe(201);
+    expect(again.json().item.categoryId).toBe(createdCategory!.id);
+    const all = await db.select().from(productCategories);
+    expect(all.filter((c) => c.name === 'Panadería')).toHaveLength(1);
+  });
+
+  it('permite cambiar la categoría de un ítem a una nueva', async () => {
+    const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const [cat] = await db.insert(productCategories).values({ name: 'Bebidas' }).returning();
+    const createBiz = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses`,
+      headers: auth(producer.accessToken),
+      payload: { name: 'Tienda' },
+    });
+    const businessId = createBiz.json().business.id;
+    const create = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses/${businessId}/items`,
+      headers: auth(producer.accessToken),
+      payload: { type: 'producto', name: 'Agua', price: 30, unit: 'unidad', categoryId: cat.id },
+    });
+    const itemId = create.json().item.id;
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/items/${itemId}`,
+      headers: auth(producer.accessToken),
+      payload: { newCategoryName: 'Aguas' },
+    });
+    expect(patch.statusCode).toBe(200);
+    const created = await db.query.productCategories.findFirst({ where: eq(productCategories.name, 'Aguas') });
+    expect(created).toBeTruthy();
+    expect(patch.json().item.categoryId).toBe(created!.id);
   });
 
   it('un servicio no puede llevar unidad', async () => {

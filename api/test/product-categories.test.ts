@@ -95,6 +95,21 @@ describe('categorías de producto (nomenclador)', () => {
     expect(patch.json().category.name).toBe('Frutas y Verduras');
   });
 
+  it('rechaza renombrar a una categoría de producto duplicada', async () => {
+    const admin = await createUser('Root', 'root@buenprecio.app', 'administrador');
+    await db.insert(productCategories).values({ name: 'Bebidas' });
+    const [cat] = await db.insert(productCategories).values({ name: 'Refrescos' }).returning();
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/product-categories/${cat.id}`,
+      headers: auth(admin.accessToken),
+      payload: { name: 'Bebidas' },
+    });
+    expect(patch.statusCode).toBe(409);
+    expect(patch.json().message).toBe('La categoría de producto ya existe');
+  });
+
   it('no permite eliminar categoría en uso', async () => {
     const admin = await createUser('Root', 'root@buenprecio.app', 'administrador');
     const [cat] = await db.insert(productCategories).values({ name: 'Panadería' }).returning();
@@ -132,7 +147,6 @@ describe('categorías de producto (nomenclador)', () => {
     });
     expect(remove.statusCode).toBe(404);
   });
-
   it('solo el admin edita categorías de producto', async () => {
     const producer = await createUser('Luis', 'luis@ejemplo.com', 'productor');
     const [cat] = await db.insert(productCategories).values({ name: 'Verduras' }).returning();

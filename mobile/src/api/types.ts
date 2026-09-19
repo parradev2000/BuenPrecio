@@ -59,6 +59,9 @@ export type Business = {
   address: string | null;
   phone: string | null;
   categoryId: string | null;
+  categoryName: string | null;
+  latitude: number | null;
+  longitude: number | null;
   active: boolean;
   itemsCount?: number;
 };
@@ -123,4 +126,15 @@ export type AdminBusiness = {
   itemsCount: number;
   ownerName: string;
   ownerEmail: string;
+};
+
+export type AdminStats = {
+  totals: {
+    businesses: number;
+    products: number;
+    services: number;
+  };
+  byBusiness: { name: string; products: number; services: number }[];
+  businessesByCategory: { name: string; count: number }[];
+  productsByCategory: { name: string; count: number }[];
 };

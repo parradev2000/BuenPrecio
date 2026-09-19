@@ -16,6 +16,7 @@ export default function MyBusinessesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Business | null>(null);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -45,25 +46,60 @@ export default function MyBusinessesScreen() {
     void load();
   }, [load]);
 
-  async function createBusiness() {
+  function resetForm() {
+    setName('');
+    setAddress('');
+    setCategoryId('');
+    setCoords({});
+    setShowNewCat(false);
+    setNewCatName('');
+    setEditing(null);
+  }
+
+  function toggleForm() {
+    if (showForm) {
+      resetForm();
+      setShowForm(false);
+      setError(null);
+    } else {
+      resetForm();
+      setShowForm(true);
+    }
+  }
+
+  function startEdit(b: Business) {
+    setEditing(b);
+    setName(b.name);
+    setAddress(b.address ?? '');
+    setCategoryId(b.categoryId ?? '');
+    setCoords({ latitude: b.latitude ?? undefined, longitude: b.longitude ?? undefined });
+    setShowNewCat(false);
+    setError(null);
+    setShowForm(true);
+  }
+
+  async function saveBusiness() {
     setBusy(true);
     setError(null);
     try {
       const body: Record<string, string | number> = { name };
-      if (address) body.address = address;
+      if (address || editing) body.address = address;
       if (categoryId) body.categoryId = categoryId;
       if (coords.latitude !== undefined) body.latitude = coords.latitude;
       if (coords.longitude !== undefined) body.longitude = coords.longitude;
-      const res = await api<{ business: Business }>('/businesses', { method: 'POST', body, auth: true });
-      setName('');
-      setAddress('');
-      setCategoryId('');
-      setCoords({});
-      setShowForm(false);
-      setShowNewCat(false);
-      router.push(`/my-businesses/${res.business.id}`);
+      if (editing) {
+        await api(`/businesses/${editing.id}`, { method: 'PATCH', body, auth: true });
+        resetForm();
+        setShowForm(false);
+        await load();
+      } else {
+        const res = await api<{ business: Business }>('/businesses', { method: 'POST', body, auth: true });
+        resetForm();
+        setShowForm(false);
+        router.push(`/my-businesses/${res.business.id}`);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo crear');
+      setError(e instanceof Error ? e.message : editing ? 'No se pudo guardar' : 'No se pudo crear');
     } finally {
       setBusy(false);
     }
@@ -136,11 +172,12 @@ export default function MyBusinessesScreen() {
       <Button
         title={showForm ? 'Cancelar' : '+ Nuevo negocio'}
         variant={showForm ? 'ghost' : 'primary'}
-        onPress={() => setShowForm((v) => !v)}
+        onPress={toggleForm}
       />
 
       {showForm && (
         <View style={styles.form}>
+          <Text style={styles.formTitle}>{editing ? 'Editar negocio' : 'Nuevo negocio'}</Text>
           <TextField label="Nombre *" value={name} onChangeText={setName} />
           <TextField label="Dirección" value={address} onChangeText={setAddress} />
           <Button title="Usar mi ubicación (GPS)" variant="secondary" onPress={() => void locateMe()} />
@@ -193,8 +230,8 @@ export default function MyBusinessesScreen() {
             </>
           )}
           <Button
-            title={busy ? 'Creando…' : 'Crear negocio'}
-            onPress={() => void createBusiness()}
+            title={busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear negocio'}
+            onPress={() => void saveBusiness()}
             disabled={busy || !name.trim()}
           />
         </View>
@@ -225,6 +262,9 @@ export default function MyBusinessesScreen() {
                 <Pressable style={styles.smallBtn} onPress={() => router.push(`/my-businesses/${item.id}`)}>
                   <Text style={styles.smallBtnText}>Gestionar</Text>
                 </Pressable>
+                <Pressable style={[styles.smallBtn, styles.smallBtnGhost]} onPress={() => startEdit(item)}>
+                  <Text style={styles.smallBtnGhostText}>Editar</Text>
+                </Pressable>
                 <Pressable style={[styles.smallBtn, styles.smallBtnGhost]} onPress={() => void toggleActive(item)}>
                   <Text style={styles.smallBtnGhostText}>{item.active ? 'Desactivar' : 'Activar'}</Text>
                 </Pressable>
@@ -246,6 +286,11 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 12,
     gap: 8,
+  },
+  formTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
   },
   label: {
     fontSize: 13,
