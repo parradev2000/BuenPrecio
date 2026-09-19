@@ -7,7 +7,7 @@ import type {
   AdminBusiness,
   ApplicationStatus,
   Category,
-  CategoryKind,
+  ProductCategory,
   User,
   UserRole,
 } from '../src/api/types';
@@ -15,12 +15,13 @@ import { Alert, Button, EmptyState, Loading, Screen, TextField } from '../src/co
 import { useAuth } from '../src/context/AuthContext';
 import { COLORS } from '../src/lib/format';
 
-type TabId = 'applications' | 'users' | 'categories' | 'businesses';
+type TabId = 'applications' | 'users' | 'categories' | 'productCategories' | 'businesses';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'applications', label: 'Solicitudes' },
   { id: 'users', label: 'Usuarios' },
   { id: 'categories', label: 'Tipos de negocio' },
+  { id: 'productCategories', label: 'Cat. producto' },
   { id: 'businesses', label: 'Negocios' },
 ];
 
@@ -72,6 +73,7 @@ export default function AdminScreen() {
       {tab === 'applications' && <ApplicationsTab />}
       {tab === 'users' && <UsersTab />}
       {tab === 'categories' && <CategoriesTab />}
+      {tab === 'productCategories' && <ProductCategoriesTab />}
       {tab === 'businesses' && <BusinessesTab />}
     </Screen>
   );
@@ -312,8 +314,11 @@ function CategoriesTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [kind, setKind] = useState<CategoryKind>('negocio');
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -340,7 +345,7 @@ function CategoriesTab() {
     setBusy(true);
     setError(null);
     try {
-      await api('/categories', { method: 'POST', body: { name: name.trim(), kind }, auth: true });
+      await api('/categories', { method: 'POST', body: { name: name.trim(), kind: 'negocio' }, auth: true });
       setName('');
       await load();
     } catch (e) {
@@ -350,11 +355,55 @@ function CategoriesTab() {
     }
   }
 
+  function startEdit(category: Category) {
+    setEditingId(category.id);
+    setEditName(category.name);
+    setEditError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditError(null);
+  }
+
+  async function saveEdit() {
+    if (!editingId) {
+      return;
+    }
+    const target = items.find((c) => c.id === editingId);
+    if (!target) {
+      return;
+    }
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      setEditError('Escribe un nombre');
+      return;
+    }
+    if (trimmed === target.name) {
+      cancelEdit();
+      return;
+    }
+    setSaving(true);
+    setEditError(null);
+    try {
+      await api(`/categories/${editingId}`, { method: 'PATCH', body: { name: trimmed }, auth: true });
+      cancelEdit();
+      await load();
+    } catch (e) {
+      setEditError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function removeCategory(id: string) {
     setBusy(true);
     setError(null);
     try {
       await api(`/categories/${id}`, { method: 'DELETE', auth: true });
+      if (editingId === id) {
+        cancelEdit();
+      }
       await load();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Error');
@@ -367,14 +416,6 @@ function CategoriesTab() {
     <ScrollView style={styles.body} contentContainerStyle={styles.list}>
       <Text style={styles.sectionTitle}>Nuevo tipo de negocio</Text>
       <TextField label="Nombre" value={name} onChangeText={setName} placeholder="Ej. Panadería" />
-      <View style={styles.chips}>
-        <Pressable style={[styles.chip, kind === 'negocio' && styles.chipActive]} onPress={() => setKind('negocio')}>
-          <Text style={[styles.chipText, kind === 'negocio' && styles.chipTextActive]}>Negocio</Text>
-        </Pressable>
-        <Pressable style={[styles.chip, kind === 'item' && styles.chipActive]} onPress={() => setKind('item')}>
-          <Text style={[styles.chipText, kind === 'item' && styles.chipTextActive]}>Producto</Text>
-        </Pressable>
-      </View>
       <Button title={busy ? 'Guardando…' : 'Crear tipo de negocio'} onPress={() => void createCategory()} disabled={busy} />
       {error && <Alert kind="error">{error}</Alert>}
       <Text style={styles.sectionTitle}>Existentes</Text>
@@ -383,13 +424,176 @@ function CategoriesTab() {
       ) : items.length === 0 ? (
         <EmptyState message="Sin tipos de negocio." />
       ) : (
+        items
+          .filter((c) => c.kind === 'negocio')
+          .map((c) => (
+            <View key={c.id} style={styles.card}>
+              {editingId === c.id ? (
+                <>
+                  <TextField label="Nombre" value={editName} onChangeText={setEditName} placeholder="Ej. Panadería" />
+                  {editError && <Alert kind="error">{editError}</Alert>}
+                  <View style={styles.rowActions}>
+                    <Button title={saving ? 'Guardando…' : 'Guardar'} disabled={saving} onPress={() => void saveEdit()} />
+                    <Button title="Cancelar" variant="secondary" disabled={saving} onPress={cancelEdit} />
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.cardTop}>
+                    <Text style={styles.cardTitle}>{c.name}</Text>
+                    <Text style={styles.muted}>Negocio</Text>
+                  </View>
+                  <View style={styles.rowActions}>
+                    <Button title="Editar" variant="secondary" disabled={busy} onPress={() => startEdit(c)} />
+                    <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+                  </View>
+                </>
+              )}
+            </View>
+          ))
+      )}
+    </ScrollView>
+  );
+}
+
+function ProductCategoriesTab() {
+  const [items, setItems] = useState<ProductCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api<{ items: ProductCategory[] }>('/product-categories');
+      setItems(res.items);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'No se pudo cargar');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function createCategory() {
+    if (!name.trim()) {
+      setError('Escribe un nombre');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/product-categories', { method: 'POST', body: { name: name.trim() }, auth: true });
+      setName('');
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEdit(category: ProductCategory) {
+    setEditingId(category.id);
+    setEditName(category.name);
+    setEditError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditError(null);
+  }
+
+  async function saveEdit() {
+    if (!editingId) {
+      return;
+    }
+    const target = items.find((c) => c.id === editingId);
+    if (!target) {
+      return;
+    }
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      setEditError('Escribe un nombre');
+      return;
+    }
+    if (trimmed === target.name) {
+      cancelEdit();
+      return;
+    }
+    setSaving(true);
+    setEditError(null);
+    try {
+      await api(`/product-categories/${editingId}`, { method: 'PATCH', body: { name: trimmed }, auth: true });
+      cancelEdit();
+      await load();
+    } catch (e) {
+      setEditError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeCategory(id: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/product-categories/${id}`, { method: 'DELETE', auth: true });
+      if (editingId === id) {
+        cancelEdit();
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <ScrollView style={styles.body} contentContainerStyle={styles.list}>
+      <Text style={styles.sectionTitle}>Nueva categoría de producto</Text>
+      <TextField label="Nombre" value={name} onChangeText={setName} placeholder="Ej. Frutas y Verduras" />
+      <Button title={busy ? 'Guardando…' : 'Crear categoría de producto'} onPress={() => void createCategory()} disabled={busy} />
+      {error && <Alert kind="error">{error}</Alert>}
+      <Text style={styles.sectionTitle}>Existentes</Text>
+      {loading ? (
+        <Loading />
+      ) : items.length === 0 ? (
+        <EmptyState message="Sin categorías de producto." />
+      ) : (
         items.map((c) => (
           <View key={c.id} style={styles.card}>
-            <View style={styles.cardTop}>
-              <Text style={styles.cardTitle}>{c.name}</Text>
-              <Text style={styles.muted}>{c.kind === 'negocio' ? 'Negocio' : 'Producto'}</Text>
-            </View>
-            <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+            {editingId === c.id ? (
+              <>
+                <TextField label="Nombre" value={editName} onChangeText={setEditName} placeholder="Ej. Frutas y Verduras" />
+                {editError && <Alert kind="error">{editError}</Alert>}
+                <View style={styles.rowActions}>
+                  <Button title={saving ? 'Guardando…' : 'Guardar'} disabled={saving} onPress={() => void saveEdit()} />
+                  <Button title="Cancelar" variant="secondary" disabled={saving} onPress={cancelEdit} />
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.cardTop}>
+                  <Text style={styles.cardTitle}>{c.name}</Text>
+                  <Text style={styles.muted}>Producto</Text>
+                </View>
+                <View style={styles.rowActions}>
+                  <Button title="Editar" variant="secondary" disabled={busy} onPress={() => startEdit(c)} />
+                  <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+                </View>
+              </>
+            )}
           </View>
         ))
       )}

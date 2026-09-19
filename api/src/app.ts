@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { sql } from 'drizzle-orm';
+import type { FastifyError } from 'fastify';
 import Fastify from 'fastify';
 import { CURRENCY, ROLE_NAMES } from '@buenprecio/shared';
 import { checkDbConnection, db } from './db.js';
@@ -17,6 +18,7 @@ import { authRoutes } from './routes/auth.js';
 import { producerRoutes } from './routes/producer.js';
 import { adminRoutes } from './routes/admin.js';
 import { categoryRoutes } from './routes/categories.js';
+import { productCategoryRoutes } from './routes/product-categories.js';
 import { businessRoutes } from './routes/businesses.js';
 import { uploadRoutes } from './routes/uploads.js';
 
@@ -31,7 +33,7 @@ export async function buildApp() {
   await mkdir(UPLOADS_DIR, { recursive: true });
   await app.register(fastifyStatic, { root: UPLOADS_DIR, prefix: '/uploads/' });
 
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler((error: FastifyError, request, reply) => {
     const status = error.statusCode ?? 500;
     if (status === 413 || error.code === 'FST_REQ_FILE_TOO_LARGE') {
       return reply.code(413).send({ message: 'El archivo es demasiado grande (máximo 5 MB)' });
@@ -55,6 +57,7 @@ export async function buildApp() {
   await app.register(producerRoutes, { prefix: '/api/v1' });
   await app.register(adminRoutes, { prefix: '/api/v1' });
   await app.register(categoryRoutes, { prefix: '/api/v1' });
+  await app.register(productCategoryRoutes, { prefix: '/api/v1' });
   await app.register(businessRoutes, { prefix: '/api/v1' });
   await app.register(uploadRoutes, { prefix: '/api/v1' });
 

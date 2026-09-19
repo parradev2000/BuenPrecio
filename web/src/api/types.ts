@@ -91,6 +91,12 @@ export type Category = {
   createdAt: string;
 };
 
+export type ProductCategory = {
+  id: string;
+  name: string;
+  createdAt: string;
+};
+
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected';
 
 export type Application = {

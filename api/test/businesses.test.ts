@@ -3,7 +3,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { db } from '../src/db.js';
 import { hashPassword } from '../src/lib/password.js';
-import { businessItems, businesses, categories, users } from '../src/schema.js';
+import { businessItems, businesses, categories, productCategories, users } from '../src/schema.js';
 import { truncateAll } from './helpers.js';
 
 const BASE = '/api/v1';
@@ -261,6 +261,7 @@ describe('negocios (productor)', () => {
 describe('ítems (productor)', () => {
   it('crea, lista, actualiza y elimina ítems', async () => {
     const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const [cat] = await db.insert(productCategories).values({ name: 'Bebidas' }).returning();
     const createBiz = await app.inject({
       method: 'POST',
       url: `${BASE}/businesses`,
@@ -273,7 +274,7 @@ describe('ítems (productor)', () => {
       method: 'POST',
       url: `${BASE}/businesses/${businessId}/items`,
       headers: auth(producer.accessToken),
-      payload: { type: 'producto', name: 'Café con leche', price: 120, unit: 'unidad' },
+      payload: { type: 'producto', name: 'Café con leche', price: 120, unit: 'unidad', categoryId: cat.id },
     });
     expect(create.statusCode).toBe(201);
     const itemId = create.json().item.id;
@@ -309,8 +310,43 @@ describe('ítems (productor)', () => {
     expect(listAfter.json().items).toHaveLength(0);
   });
 
+  it('la categoría de producto es obligatoria', async () => {
+    const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const createBiz = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses`,
+      headers: auth(producer.accessToken),
+      payload: { name: 'Tienda' },
+    });
+    const businessId = createBiz.json().business.id;
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses/${businessId}/items`,
+      headers: auth(producer.accessToken),
+      payload: { type: 'producto', name: 'Pan', price: 50, unit: 'unidad' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toBe('Categoría inválida');
+
+    const badCat = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses/${businessId}/items`,
+      headers: auth(producer.accessToken),
+      payload: {
+        type: 'producto',
+        name: 'Pan',
+        price: 50,
+        categoryId: '00000000-0000-0000-0000-000000000000',
+      },
+    });
+    expect(badCat.statusCode).toBe(400);
+    expect(badCat.json().message).toBe('Categoría inválida');
+  });
+
   it('un servicio no puede llevar unidad', async () => {
     const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const [cat] = await db.insert(productCategories).values({ name: 'Servicios' }).returning();
     const createBiz = await app.inject({
       method: 'POST',
       url: `${BASE}/businesses`,
@@ -323,7 +359,7 @@ describe('ítems (productor)', () => {
       method: 'POST',
       url: `${BASE}/businesses/${businessId}/items`,
       headers: auth(producer.accessToken),
-      payload: { type: 'servicio', name: 'Corte de pelo', price: 350 },
+      payload: { type: 'servicio', name: 'Corte de pelo', price: 350, categoryId: cat.id },
     });
     expect(ok.statusCode).toBe(201);
     expect(ok.json().item.unit).toBeNull();
@@ -332,7 +368,7 @@ describe('ítems (productor)', () => {
       method: 'POST',
       url: `${BASE}/businesses/${businessId}/items`,
       headers: auth(producer.accessToken),
-      payload: { type: 'servicio', name: 'Arreglo', price: 200, unit: 'kg' },
+      payload: { type: 'servicio', name: 'Arreglo', price: 200, unit: 'kg', categoryId: cat.id },
     });
     expect(bad.statusCode).toBe(400);
   });
@@ -360,6 +396,7 @@ describe('ítems (productor)', () => {
 
   it('guarda y retorna photoUrl del ítem', async () => {
     const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const [cat] = await db.insert(productCategories).values({ name: 'Panadería' }).returning();
     const createBiz = await app.inject({
       method: 'POST',
       url: `${BASE}/businesses`,
@@ -372,7 +409,14 @@ describe('ítems (productor)', () => {
       method: 'POST',
       url: `${BASE}/businesses/${businessId}/items`,
       headers: auth(producer.accessToken),
-      payload: { type: 'producto', name: 'Pan', price: 50, unit: 'unidad', photoUrl: 'https://ejemplo.com/pan.jpg' },
+      payload: {
+        type: 'producto',
+        name: 'Pan',
+        price: 50,
+        unit: 'unidad',
+        categoryId: cat.id,
+        photoUrl: 'https://ejemplo.com/pan.jpg',
+      },
     });
     expect(create.statusCode).toBe(201);
     expect(create.json().item.photoUrl).toBe('https://ejemplo.com/pan.jpg');
@@ -384,11 +428,11 @@ describe('ítems (productor)', () => {
     });
     expect(detail.json().business.items[0].photoUrl).toBe('https://ejemplo.com/pan.jpg');
 
-    const cat = await app.inject({
+    const catalogRes = await app.inject({
       method: 'GET',
       url: `${BASE}/catalog/businesses/${businessId}`,
     });
-    expect(cat.json().business.items[0].photoUrl).toBe('https://ejemplo.com/pan.jpg');
+    expect(catalogRes.json().business.items[0].photoUrl).toBe('https://ejemplo.com/pan.jpg');
 
     const clear = await app.inject({
       method: 'PATCH',

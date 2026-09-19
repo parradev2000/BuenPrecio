@@ -56,6 +56,17 @@ export async function categoryRoutes(app: FastifyInstance) {
     if (values.kind && values.kind !== target.kind && (await isInUse(target.id))) {
       return sendError(reply, 409, 'El tipo de negocio está en uso y no puede cambiar de tipo');
     }
+    const name = values.name ?? target.name;
+    const kind = values.kind ?? target.kind;
+    if (name !== target.name || kind !== target.kind) {
+      const duplicate = await db.query.categories.findFirst({
+        where: (categories, { and, eq: equals, ne }) =>
+          and(eq(categories.kind, kind), equals(categories.name, name), ne(categories.id, target.id)),
+      });
+      if (duplicate) {
+        return sendError(reply, 409, 'Ya existe una categoría con ese nombre');
+      }
+    }
     const [updated] = await db
       .update(categories)
       .set(values)

@@ -55,6 +55,16 @@ export const categories = pgTable(
   (table) => [uniqueIndex('categories_kind_name_unique').on(table.kind, table.name)],
 );
 
+export const productCategories = pgTable(
+  'product_categories',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('product_categories_name_unique').on(table.name)],
+);
+
 export const businesses = pgTable(
   'businesses',
   {
@@ -90,7 +100,7 @@ export const businessItems = pgTable(
     price: numeric('price', { precision: 12, scale: 2, mode: 'number' }).notNull(),
     unit: itemUnitEnum('unit'),
     photoUrl: text('photo_url'),
-    categoryId: uuid('category_id').references(() => categories.id),
+    categoryId: uuid('category_id').references(() => productCategories.id),
     available: boolean('available').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -152,12 +162,16 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
 
 export const businessItemsRelations = relations(businessItems, ({ one, many }) => ({
   business: one(businesses, { fields: [businessItems.businessId], references: [businesses.id] }),
-  category: one(categories, { fields: [businessItems.categoryId], references: [categories.id] }),
+  category: one(productCategories, { fields: [businessItems.categoryId], references: [productCategories.id] }),
   reports: many(priceReports),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   businesses: many(businesses),
+  items: many(businessItems),
+}));
+
+export const productCategoriesRelations = relations(productCategories, ({ many }) => ({
   items: many(businessItems),
 }));
 
@@ -170,6 +184,7 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type ProducerApplication = typeof producerApplications.$inferSelect;
 export type Category = typeof categories.$inferSelect;
+export type ProductCategory = typeof productCategories.$inferSelect;
 export type Business = typeof businesses.$inferSelect;
 export type NewBusiness = typeof businesses.$inferInsert;
 export type BusinessItem = typeof businessItems.$inferSelect;

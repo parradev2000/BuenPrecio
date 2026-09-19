@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
-import type { Category } from '../../api/types';
+import type { ProductCategory } from '../../api/types';
 import { Alert, EmptyState, Field, Loading } from '../../components/ui';
 
 function message(e: unknown, fallback: string) {
   return e instanceof Error ? e.message : fallback;
 }
 
-export function AdminCategoriesSection() {
-  const [items, setItems] = useState<Category[]>([]);
+export function AdminProductCategoriesSection() {
+  const [items, setItems] = useState<ProductCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -23,7 +23,7 @@ export function AdminCategoriesSection() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api<{ items: Category[] }>('/categories');
+      const res = await api<{ items: ProductCategory[] }>('/product-categories');
       setItems(res.items);
     } catch (e) {
       setError(message(e, 'No se pudo cargar'));
@@ -41,7 +41,7 @@ export function AdminCategoriesSection() {
     setBusy(true);
     setFormError(null);
     try {
-      await api('/categories', { method: 'POST', body: { name: name.trim(), kind: 'negocio' }, auth: true });
+      await api('/product-categories', { method: 'POST', body: { name: name.trim() }, auth: true });
       setName('');
       await load();
     } catch (e) {
@@ -51,7 +51,7 @@ export function AdminCategoriesSection() {
     }
   }
 
-  function startEdit(category: Category) {
+  function startEdit(category: ProductCategory) {
     setEditingId(category.id);
     setEditName(category.name);
     setEditError(null);
@@ -79,7 +79,7 @@ export function AdminCategoriesSection() {
     setSaving(true);
     setEditError(null);
     try {
-      await api(`/categories/${editingId}`, { method: 'PATCH', body: { name: trimmed }, auth: true });
+      await api(`/product-categories/${editingId}`, { method: 'PATCH', body: { name: trimmed }, auth: true });
       cancelEdit();
       await load();
     } catch (e) {
@@ -89,13 +89,13 @@ export function AdminCategoriesSection() {
     }
   }
 
-  async function remove(category: Category) {
-    if (!window.confirm(`¿Eliminar el tipo de negocio "${category.name}"?`)) {
+  async function remove(category: ProductCategory) {
+    if (!window.confirm(`¿Eliminar la categoría de producto "${category.name}"?`)) {
       return;
     }
     setError(null);
     try {
-      await api(`/categories/${category.id}`, { method: 'DELETE', auth: true });
+      await api(`/product-categories/${category.id}`, { method: 'DELETE', auth: true });
       if (editingId === category.id) {
         cancelEdit();
       }
@@ -108,23 +108,23 @@ export function AdminCategoriesSection() {
   return (
     <section>
       <form onSubmit={create} className="form card">
-        <h2>Nuevo tipo de negocio</h2>
+        <h2>Nueva categoría de producto</h2>
         {formError && <Alert kind="error">{formError}</Alert>}
         <Field
           label="Nombre *"
           value={name}
-          maxLength={100}
-          placeholder="Ej. Panadería"
           onChange={(e) => setName(e.target.value)}
+          maxLength={100}
+          placeholder="Ej. Frutas y Verduras"
         />
         <button type="submit" className="btn btn-primary" disabled={busy || !name.trim()}>
-          {busy ? 'Creando…' : 'Crear tipo de negocio'}
+          {busy ? 'Creando…' : 'Crear categoría de producto'}
         </button>
       </form>
 
       {error && <Alert kind="error">{error}</Alert>}
       {loading && <Loading />}
-      {!loading && items.length === 0 && <EmptyState message="No hay tipos de negocio creados." />}
+      {!loading && items.length === 0 && <EmptyState message="No hay categorías de producto creadas." />}
       <ul className="item-list">
         {items.map((c) =>
           editingId === c.id ? (
@@ -150,7 +150,7 @@ export function AdminCategoriesSection() {
           ) : (
             <li key={c.id} className="item-row">
               <div>
-                <strong>{c.name}</strong> <span className="chip">{c.kind === 'negocio' ? 'Negocio' : 'Producto'}</span>
+                <strong>{c.name}</strong>
                 <p className="muted">Creada el {new Date(c.createdAt).toLocaleDateString('es-CU')}</p>
               </div>
               <div className="item-row-actions">

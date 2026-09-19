@@ -11,6 +11,7 @@ export async function truncateAll(app: FastifyInstance) {
       business_items,
       businesses,
       producer_applications,
+      product_categories,
       categories,
       users
     cascade

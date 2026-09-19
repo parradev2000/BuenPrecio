@@ -3,7 +3,7 @@ import { FlatList, Image, Platform, Pressable, StyleSheet, Text, View } from 're
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../src/api/client';
-import type { Business, BusinessItem, ItemType } from '../../src/api/types';
+import type { Business, BusinessItem, ItemType, ProductCategory } from '../../src/api/types';
 import { Alert, Button, EmptyState, Loading, Screen, TextField } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS, formatPrice, mediaUrl } from '../../src/lib/format';
@@ -15,6 +15,7 @@ export default function BusinessItemsScreen() {
   const { session } = useAuth();
   const [business, setBusiness] = useState<Business | null>(null);
   const [items, setItems] = useState<BusinessItem[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,14 +28,19 @@ export default function BusinessItemsScreen() {
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [categoryId, setCategoryId] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api<{ business: Business & { items: BusinessItem[] } }>(`/businesses/${id}`, { auth: true });
+      const [res, cats] = await Promise.all([
+        api<{ business: Business & { items: BusinessItem[] } }>(`/businesses/${id}`, { auth: true }),
+        api<{ items: ProductCategory[] }>('/product-categories'),
+      ]);
       setBusiness(res.business);
       setItems(res.business.items ?? []);
+      setProductCategories(cats.items);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar');
@@ -60,10 +66,14 @@ export default function BusinessItemsScreen() {
       setError('Escribe nombre y un precio mayor a 0');
       return;
     }
+    if (!categoryId) {
+      setError('Selecciona una categoría');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const body: Record<string, unknown> = { type, name: name.trim(), price: parsedPrice };
+      const body: Record<string, unknown> = { type, name: name.trim(), price: parsedPrice, categoryId };
       if (type === 'producto') {
         body.unit = unit || 'unidad';
       } else {
@@ -80,6 +90,7 @@ export default function BusinessItemsScreen() {
       setPrice('');
       setPhotoUrl('');
       setPhotoPreview(null);
+      setCategoryId('');
       setEditing(null);
       setFormOpen(false);
       await load();
@@ -98,6 +109,7 @@ export default function BusinessItemsScreen() {
     setPrice(String(item.price));
     setPhotoUrl(item.photoUrl ?? '');
     setPhotoPreview(null);
+    setCategoryId(item.categoryId ?? '');
     setFormOpen(true);
     setError(null);
   }
@@ -204,6 +216,18 @@ export default function BusinessItemsScreen() {
             </View>
           )}
           <TextField label="Nombre *" value={name} onChangeText={setName} placeholder="Ej. Café con leche" />
+          <Text style={styles.label}>Categoría *</Text>
+          <View style={styles.formRow}>
+            {productCategories.map((c) => (
+              <Pressable
+                key={c.id}
+                style={[styles.unitBtn, categoryId === c.id && styles.unitBtnActive]}
+                onPress={() => setCategoryId(c.id)}
+              >
+                <Text style={[styles.unitText, categoryId === c.id && styles.unitTextActive]}>{c.name}</Text>
+              </Pressable>
+            ))}
+          </View>
           <TextField
             label="Precio (CUP) *"
             value={price}
