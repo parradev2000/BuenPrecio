@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Button } from 'antd';
 import { loginSchema } from '@buenprecio/shared';
 import { zodError } from '../lib/zodError';
 import { useAuth } from '../context/AuthContext';
@@ -41,32 +42,41 @@ export function LoginPage() {
   }
 
   return (
-    <div className="auth-page">
-      <h1>Entrar</h1>
-      {apiError && <Alert kind="error">{apiError}</Alert>}
-      <form onSubmit={onSubmit} className="form">
-        <Field
-          label="Correo"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="tu@correo.com"
-          error={errors.email}
-        />
-        <Field
-          label="Contraseña"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          error={errors.password}
-        />
-        <button type="submit" className="btn btn-primary" disabled={busy}>
-          {busy ? 'Entrando…' : 'Entrar'}
-        </button>
-      </form>
-      <p className="muted">
-        ¿No tienes cuenta? <Link to="/registro">Crea una gratis</Link>
-      </p>
+    <div className="mx-auto max-w-md">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">Entrar</h1>
+        {apiError && (
+          <div className="mt-4">
+            <Alert kind="error">{apiError}</Alert>
+          </div>
+        )}
+        <form onSubmit={onSubmit} className="mt-4">
+          <Field
+            label="Correo"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu@correo.com"
+            error={errors.email}
+          />
+          <Field
+            label="Contraseña"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={errors.password}
+          />
+          <Button type="primary" htmlType="submit" block loading={busy} className="mt-2">
+            Entrar
+          </Button>
+        </form>
+        <p className="mt-5 text-center text-sm text-slate-500">
+          ¿No tienes cuenta?{' '}
+          <Link to="/registro" className="font-medium text-brand-700 hover:text-brand-800">
+            Crea una gratis
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

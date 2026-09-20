@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Button, Segmented, Table, Tag, type TableProps } from 'antd';
 import { api } from '../../api/client';
 import type { AdminApplicationRow, ApplicationStatus } from '../../api/types';
-import { Alert, EmptyState, Loading, Pagination } from '../../components/ui';
+import { Alert } from '../../components/ui';
 
-const PAGE_SIZE = 10;
-
-const STATUS_BADGE: Record<ApplicationStatus, string> = {
-  pending: 'badge-warning',
-  approved: 'badge-success',
-  rejected: 'badge-danger',
+const STATUS_COLOR: Record<ApplicationStatus, string> = {
+  pending: 'gold',
+  approved: 'green',
+  rejected: 'red',
 };
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
@@ -32,16 +31,6 @@ export function ApplicationsSection({ onReviewed }: { onReviewed?: () => void })
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [busy, setBusy] = useState(false);
-  const [page, setPage] = useState(1);
-
-  const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-
-  useEffect(() => {
-    if (page > pages) setPage(pages);
-  }, [page, pages]);
-
-  const start = (page - 1) * PAGE_SIZE;
-  const paged = items.slice(start, start + PAGE_SIZE);
 
   const load = useCallback(async (status: ApplicationStatus) => {
     setLoading(true);
@@ -74,89 +63,83 @@ export function ApplicationsSection({ onReviewed }: { onReviewed?: () => void })
     }
   }
 
+  const columns: TableProps<AdminApplicationRow>['columns'] = [
+    {
+      title: 'Solicitante',
+      key: 'user',
+      render: (_, a) => (
+        <span className="flex items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-700">
+            {initials(a.userName)}
+          </span>
+          <span className="flex flex-col">
+            <strong className="font-medium text-slate-900">{a.userName}</strong>
+            <span className="text-xs text-slate-500">{a.userEmail}</span>
+          </span>
+        </span>
+      ),
+    },
+    {
+      title: 'Solicitada',
+      dataIndex: 'createdAt',
+      render: (value: string) => (
+        <span className="text-slate-500">{new Date(value).toLocaleDateString('es-CU')}</span>
+      ),
+    },
+    {
+      title: 'Estado',
+      key: 'status',
+      responsive: ['sm'],
+      render: (_, a) => <Tag color={STATUS_COLOR[a.status]}>{STATUS_LABEL[a.status]}</Tag>,
+    },
+    {
+      title: 'Acciones',
+      key: 'actions',
+      render: (_, a) =>
+        filter === 'pending' ? (
+          <div className="flex gap-2">
+            <Button type="primary" size="small" disabled={busy} onClick={() => void review(a.id, 'approve')}>
+              Aprobar
+            </Button>
+            <Button danger size="small" disabled={busy} onClick={() => void review(a.id, 'reject')}>
+              Rechazar
+            </Button>
+          </div>
+        ) : null,
+    },
+  ];
+
   return (
-    <section className="admin-card">
-      <div className="admin-head">
-        <h2>Solicitudes de productor</h2>
-        <div className="admin-filters">
-          {(['pending', 'approved', 'rejected'] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              className={`chip tab${filter === s ? ' tab-active' : ''}`}
-              onClick={() => {
-                setFilter(s);
-                setPage(1);
-              }}
-            >
-              {s === 'pending' ? 'Pendientes' : s === 'approved' ? 'Aprobadas' : 'Rechazadas'}
-            </button>
-          ))}
-        </div>
+    <section>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">Solicitudes de productor</h2>
+        <Segmented
+          value={filter}
+          onChange={(value) => setFilter(value as typeof filter)}
+          options={[
+            { label: 'Pendientes', value: 'pending' },
+            { label: 'Aprobadas', value: 'approved' },
+            { label: 'Rechazadas', value: 'rejected' },
+          ]}
+        />
       </div>
 
-      {error && <Alert kind="error">{error}</Alert>}
-      {loading && <Loading />}
-      {!loading && items.length === 0 && <EmptyState message="No hay solicitudes aquí." />}
-
-      {!loading && items.length > 0 && (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Solicitante</th>
-                <th>Solicitada</th>
-                <th className="hide-sm">Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paged.map((a) => (
-                <tr key={a.id}>
-                  <td data-label="Solicitante">
-                    <span className="admin-cell-user">
-                      <span className="avatar-initial">{initials(a.userName)}</span>
-                      <span className="cell-meta">
-                        <strong>{a.userName}</strong>
-                        <span className="cell-muted">{a.userEmail}</span>
-                      </span>
-                    </span>
-                  </td>
-                  <td className="cell-muted" data-label="Solicitada">{new Date(a.createdAt).toLocaleDateString('es-CU')}</td>
-                  <td className="hide-sm" data-label="Estado">
-                    <span className={`badge ${STATUS_BADGE[a.status]}`}>{STATUS_LABEL[a.status]}</span>
-                  </td>
-                  <td data-label="Acciones">
-                    {filter === 'pending' ? (
-                      <div className="item-row-actions">
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                          disabled={busy}
-                          onClick={() => void review(a.id, 'approve')}
-                        >
-                          Aprobar
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm"
-                          disabled={busy}
-                          onClick={() => void review(a.id, 'reject')}
-                        >
-                          Rechazar
-                        </button>
-                      </div>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-</tbody>
-            </table>
+      {error && (
+        <div className="mt-3">
+          <Alert kind="error">{error}</Alert>
         </div>
       )}
-      {!loading && items.length > 0 && (
-        <Pagination page={page} pages={pages} total={items.length} pageSize={PAGE_SIZE} onChange={setPage} />
-      )}
+
+      <Table<AdminApplicationRow>
+        className="mt-3"
+        rowKey="id"
+        loading={loading}
+        dataSource={items}
+        columns={columns}
+        scroll={{ x: 'max-content' }}
+        pagination={{ pageSize: 10, showSizeChanger: false }}
+        locale={{ emptyText: 'No hay solicitudes aquí.' }}
+      />
     </section>
   );
 }

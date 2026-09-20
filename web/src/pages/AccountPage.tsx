@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Button, Tag } from 'antd';
 import { api } from '../api/client';
 import type { Application } from '../api/types';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +11,15 @@ const STATUS_LABEL: Record<string, string> = {
   approved: 'Aprobada',
   rejected: 'Rechazada',
 };
+
+function SectionCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
 
 export function AccountPage() {
   const { session } = useAuth();
@@ -79,65 +89,79 @@ export function AccountPage() {
   }
 
   return (
-    <div className="page">
-      <h1>Mi cuenta</h1>
+    <div className="mx-auto max-w-2xl space-y-5">
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Mi cuenta</h1>
+
       {session && (
-        <div className="profile">
-          <p>
-            <strong>{session.user.name}</strong> · {session.user.email}
-          </p>
-          <p>
-            Rol: <span className="chip">{roleLabel}</span>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <p className="text-lg font-semibold text-slate-900">{session.user.name}</p>
+          <p className="text-sm text-slate-500">{session.user.email}</p>
+          <p className="mt-3 text-sm text-slate-600">
+            Rol: <Tag color="green">{roleLabel}</Tag>
           </p>
         </div>
       )}
 
       {roleLabel === 'Consumidor' && (
-        <section className="card">
-          <h2>Ser productor</h2>
-          <p>
+        <SectionCard title="Ser productor">
+          <p className="text-sm text-slate-600">
             Como productor podrás publicar y gestionar tus negocios y su catálogo de productos y
             servicios. Envía una solicitud y un administrador la revisará.
           </p>
-          {error && <Alert kind="error">{error}</Alert>}
-          {application === undefined && <Loading />}
-          {application === null && (
-            <button type="button" className="btn btn-primary" onClick={() => void requestProducer()} disabled={busy}>
-              {busy ? 'Enviando…' : 'Solicitar ser productor'}
-            </button>
-          )}
-          {application !== null && application !== undefined && (
-            <>
-              <p>
-                Estado: <span className="chip">{STATUS_LABEL[application.status]}</span>
-              </p>
-              {application.status === 'rejected' && (
-                <button type="button" className="btn btn-primary" onClick={() => void requestProducer()} disabled={busy}>
-                  {busy ? 'Enviando…' : 'Volver a solicitar'}
-                </button>
-              )}
-              {application.status === 'approved' && (
-                <p className="muted">Ya eres productor. Ve a <Link to="/mis-negocios">Mis negocios</Link>.</p>
-              )}
-            </>
-          )}
-        </section>
+          <div className="mt-3">
+            {error && <Alert kind="error">{error}</Alert>}
+            {application === undefined && <Loading />}
+            {application === null && (
+              <Button type="primary" loading={busy} onClick={() => void requestProducer()}>
+                Solicitar ser productor
+              </Button>
+            )}
+            {application !== null && application !== undefined && (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600">
+                  Estado: <Tag>{STATUS_LABEL[application.status]}</Tag>
+                </p>
+                {application.status === 'rejected' && (
+                  <Button type="primary" loading={busy} onClick={() => void requestProducer()}>
+                    Volver a solicitar
+                  </Button>
+                )}
+                {application.status === 'approved' && (
+                  <p className="text-sm text-slate-500">
+                    Ya eres productor. Ve a{' '}
+                    <Link to="/mis-negocios" className="font-medium text-brand-700">
+                      Mis negocios
+                    </Link>
+                    .
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </SectionCard>
       )}
 
       {roleLabel === 'Productor' && (
-        <p>
-          Gestiona tus negocios en <Link to="/mis-negocios">Mis negocios</Link>.
+        <p className="text-sm text-slate-600">
+          Gestiona tus negocios en{' '}
+          <Link to="/mis-negocios" className="font-medium text-brand-700">
+            Mis negocios
+          </Link>
+          .
         </p>
       )}
 
       {roleLabel === 'Administrador' && (
-        <p>
-          Administra la plataforma en <Link to="/admin">Administración</Link>.
+        <p className="text-sm text-slate-600">
+          Administra la plataforma en{' '}
+          <Link to="/admin" className="font-medium text-brand-700">
+            Administración
+          </Link>
+          .
         </p>
       )}
 
-      <section className="card">
-        <h2>Cambiar contraseña</h2>
+      <SectionCard title="Cambiar contraseña">
         {pwMessage && <Alert kind="success">{pwMessage}</Alert>}
         {pwError && <Alert kind="error">{pwError}</Alert>}
         <form
@@ -163,11 +187,11 @@ export function AccountPage() {
             onChange={(e) => setPwNew(e.target.value)}
             required
           />
-          <button type="submit" className="btn btn-primary" disabled={pwBusy}>
-            {pwBusy ? 'Guardando…' : 'Actualizar contraseña'}
-          </button>
+          <Button type="primary" htmlType="submit" loading={pwBusy} className="mt-2">
+            Actualizar contraseña
+          </Button>
         </form>
-      </section>
+      </SectionCard>
     </div>
   );
 }

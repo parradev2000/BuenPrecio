@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
@@ -19,12 +19,12 @@ export function AccountHeaderButton() {
     <Pressable
       hitSlop={12}
       onPress={() => router.push(session ? '/account' : '/login')}
-      style={{ padding: 4 }}
+      className="p-1 active:opacity-70"
       accessibilityLabel={session ? 'Mi cuenta' : 'Entrar'}
     >
       {session ? (
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials(session.user.name)}</Text>
+        <View className="h-8 w-8 items-center justify-center rounded-full bg-brand-600">
+          <Text className="text-[13px] font-bold text-white">{initials(session.user.name)}</Text>
         </View>
       ) : (
         <Ionicons name="person-circle-outline" size={26} color={COLORS.muted} />
@@ -32,19 +32,3 @@ export function AccountHeaderButton() {
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});

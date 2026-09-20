@@ -5,7 +5,6 @@ import { loginSchema } from '@buenprecio/shared';
 import { ApiError } from '../src/api/client';
 import { Alert, Button, Screen, TextField } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
-import { COLORS } from '../src/lib/format';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -52,8 +51,11 @@ export default function LoginScreen() {
           onChangeText={setPassword}
         />
         <Button title={busy ? 'Entrando…' : 'Entrar'} onPress={() => void submit()} disabled={busy} />
-        <TouchableOpacity onPress={() => router.push('/register')} style={{ marginTop: 16, alignItems: 'center' }}>
-          <Text style={{ color: COLORS.primary, fontWeight: '600' }}>¿No tienes cuenta? Créala gratis</Text>
+        <TouchableOpacity
+          onPress={() => router.push('/register')}
+          className="mt-4 items-center"
+        >
+          <Text className="font-semibold text-brand-700">¿No tienes cuenta? Créala gratis</Text>
         </TouchableOpacity>
       </ScrollView>
     </Screen>

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Button } from 'antd';
 import { registerSchema } from '@buenprecio/shared';
 import { zodError } from '../lib/zodError';
 import { useAuth } from '../context/AuthContext';
@@ -45,40 +46,49 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="auth-page">
-      <h1>Crear cuenta</h1>
-      {apiError && <Alert kind="error">{apiError}</Alert>}
-      <form onSubmit={onSubmit} className="form">
-        <Field
-          label="Nombre"
-          value={form.name}
-          onChange={(e) => set('name', e.target.value)}
-          placeholder="Como te llamas"
-          error={errors.name}
-        />
-        <Field
-          label="Correo"
-          type="email"
-          value={form.email}
-          onChange={(e) => set('email', e.target.value)}
-          placeholder="tu@correo.com"
-          error={errors.email}
-        />
-        <Field
-          label="Contraseña"
-          type="password"
-          value={form.password}
-          onChange={(e) => set('password', e.target.value)}
-          placeholder="Mínimo 8 caracteres"
-          error={errors.password}
-        />
-        <button type="submit" className="btn btn-primary" disabled={busy}>
-          {busy ? 'Creando…' : 'Crear cuenta'}
-        </button>
-      </form>
-      <p className="muted">
-        ¿Ya tienes cuenta? <Link to="/entrar">Entra aquí</Link>
-      </p>
+    <div className="mx-auto max-w-md">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">Crear cuenta</h1>
+        {apiError && (
+          <div className="mt-4">
+            <Alert kind="error">{apiError}</Alert>
+          </div>
+        )}
+        <form onSubmit={onSubmit} className="mt-4">
+          <Field
+            label="Nombre"
+            value={form.name}
+            onChange={(e) => set('name', e.target.value)}
+            placeholder="Como te llamas"
+            error={errors.name}
+          />
+          <Field
+            label="Correo"
+            type="email"
+            value={form.email}
+            onChange={(e) => set('email', e.target.value)}
+            placeholder="tu@correo.com"
+            error={errors.email}
+          />
+          <Field
+            label="Contraseña"
+            type="password"
+            value={form.password}
+            onChange={(e) => set('password', e.target.value)}
+            placeholder="Mínimo 8 caracteres"
+            error={errors.password}
+          />
+          <Button type="primary" htmlType="submit" block loading={busy} className="mt-2">
+            Crear cuenta
+          </Button>
+        </form>
+        <p className="mt-5 text-center text-sm text-slate-500">
+          ¿Ya tienes cuenta?{' '}
+          <Link to="/entrar" className="font-medium text-brand-700 hover:text-brand-800">
+            Entra aquí
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

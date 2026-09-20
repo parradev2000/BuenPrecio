@@ -1,14 +1,27 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Platform, Pressable, Text, View } from 'react-native';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../src/api/client';
 import type { Business, BusinessItem, ItemType, ProductCategory } from '../../src/api/types';
-import { Alert, Button, EmptyState, Loading, Screen, TextField } from '../../src/components/ui';
+import { Alert, Button, Card, EmptyState, Loading, Screen, TextField } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
-import { COLORS, formatPrice, mediaUrl } from '../../src/lib/format';
+import { formatPrice, mediaUrl } from '../../src/lib/format';
 
 const ITEM_UNITS = ['unidad', 'kg', 'litro', 'paquete'] as const;
+
+function Choice({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      className={`rounded-full border px-2.5 py-1.5 active:opacity-70 ${
+        active ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+      }`}
+      onPress={onPress}
+    >
+      <Text className={`text-[13px] ${active ? 'text-white' : 'text-muted'}`}>{label}</Text>
+    </Pressable>
+  );
+}
 
 export default function BusinessItemsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -180,7 +193,7 @@ export default function BusinessItemsScreen() {
     <Screen>
       {error && <Alert kind="error">{error}</Alert>}
       {business && (
-        <Text style={styles.muted}>
+        <Text className="mb-3 text-muted">
           {business.name} · {business.active ? 'activo' : 'inactivo'}
         </Text>
       )}
@@ -195,59 +208,59 @@ export default function BusinessItemsScreen() {
       />
 
       {formOpen && (
-        <View style={styles.form}>
-          <View style={styles.formRow}>
+        <Card className="mt-3">
+          <View className="flex-row gap-2">
             <Pressable
-              style={[styles.typeBtn, type === 'producto' && styles.typeBtnActive]}
+              className={`flex-1 rounded-lg border py-2 active:opacity-70 ${
+                type === 'producto' ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+              }`}
               onPress={() => setType('producto')}
             >
-              <Text style={[styles.typeBtnText, type === 'producto' && styles.typeBtnTextActive]}>Producto</Text>
+              <Text className={`text-center font-semibold ${type === 'producto' ? 'text-white' : 'text-muted'}`}>
+                Producto
+              </Text>
             </Pressable>
             <Pressable
-              style={[styles.typeBtn, type === 'servicio' && styles.typeBtnActive]}
+              className={`flex-1 rounded-lg border py-2 active:opacity-70 ${
+                type === 'servicio' ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+              }`}
               onPress={() => setType('servicio')}
             >
-              <Text style={[styles.typeBtnText, type === 'servicio' && styles.typeBtnTextActive]}>Servicio</Text>
+              <Text className={`text-center font-semibold ${type === 'servicio' ? 'text-white' : 'text-muted'}`}>
+                Servicio
+              </Text>
             </Pressable>
           </View>
           {type === 'producto' && (
-            <View style={styles.formRow}>
+            <View className="flex-row flex-wrap gap-2">
               {ITEM_UNITS.map((u) => (
-                <Pressable
-                  key={u}
-                  style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
-                  onPress={() => setUnit(u)}
-                >
-                  <Text style={[styles.unitText, unit === u && styles.unitTextActive]}>{u}</Text>
-                </Pressable>
+                <Choice key={u} label={u} active={unit === u} onPress={() => setUnit(u)} />
               ))}
             </View>
           )}
           <TextField label="Nombre *" value={name} onChangeText={setName} placeholder="Ej. Café con leche" />
-          <Text style={styles.label}>Categoría *</Text>
-          <View style={styles.formRow}>
+          <Text className="mt-1 text-[13px] font-semibold text-muted">Categoría *</Text>
+          <View className="flex-row flex-wrap gap-2">
             {productCategories.map((c) => (
-              <Pressable
+              <Choice
                 key={c.id}
-                style={[styles.unitBtn, categoryId === c.id && styles.unitBtnActive]}
+                label={c.name}
+                active={categoryId === c.id}
                 onPress={() => {
                   setCategoryId(c.id);
                   setNewCategoryOpen(false);
                 }}
-              >
-                <Text style={[styles.unitText, categoryId === c.id && styles.unitTextActive]}>{c.name}</Text>
-              </Pressable>
+              />
             ))}
-            <Pressable
-              style={[styles.unitBtn, newCategoryOpen && styles.unitBtnActive]}
+            <Choice
+              label="+ Nueva"
+              active={newCategoryOpen}
               onPress={() => {
                 setNewCategoryOpen((v) => !v);
                 setCategoryId('');
                 setNewCategoryName('');
               }}
-            >
-              <Text style={[styles.unitText, newCategoryOpen && styles.unitTextActive]}>+ Nueva</Text>
-            </Pressable>
+            />
           </View>
           {newCategoryOpen && (
             <TextField
@@ -263,22 +276,25 @@ export default function BusinessItemsScreen() {
             onChangeText={setPrice}
             keyboardType="numeric"
           />
-          <Text style={styles.label}>Foto (opcional)</Text>
-          <View style={styles.photoRow}>
+          <Text className="mt-1 text-[13px] font-semibold text-muted">Foto (opcional)</Text>
+          <View className="mb-1 gap-2.5">
             <Pressable
-              style={[styles.photoBtn, photoUploading && styles.photoBtnDisabled]}
+              className={`self-start rounded-xl bg-brand-600 px-3.5 py-2.5 active:opacity-70 ${
+                photoUploading ? 'opacity-60' : ''
+              }`}
               onPress={() => void pickPhoto()}
               disabled={photoUploading}
             >
-              <Text style={styles.photoBtnText}>
+              <Text className="font-bold text-white">
                 {photoUploading ? 'Subiendo…' : 'Seleccionar foto'}
               </Text>
             </Pressable>
             {photoUrl.trim() || photoPreview ? (
-              <View style={styles.photoPreviewWrap}>
+              <View className="flex-row items-center gap-3">
                 <Image
                   source={{ uri: photoPreview ?? mediaUrl(photoUrl) ?? '' }}
-                  style={styles.photoPreview}
+                  className="rounded-[10px] border border-edge"
+                  style={{ width: 72, height: 72 }}
                 />
                 <Pressable
                   onPress={() => {
@@ -286,7 +302,7 @@ export default function BusinessItemsScreen() {
                     setPhotoPreview(null);
                   }}
                 >
-                  <Text style={styles.photoClear}>Quitar</Text>
+                  <Text className="font-semibold text-red-600">Quitar</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -296,7 +312,7 @@ export default function BusinessItemsScreen() {
             onPress={() => void addItem()}
             disabled={busy}
           />
-        </View>
+        </Card>
       )}
 
       {loading ? (
@@ -309,27 +325,42 @@ export default function BusinessItemsScreen() {
           keyExtractor={(i) => i.id}
           contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}
           renderItem={({ item }) => (
-            <View style={[styles.row, !item.available && styles.rowOff]}>
-              <View style={[styles.rowLeft, item.photoUrl && styles.rowLeftWithPhoto]}>
-                {item.photoUrl ? <Image source={{ uri: mediaUrl(item.photoUrl) ?? '' }} style={styles.itemThumb} /> : null}
-                <View>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.muted}>
+            <View
+              className={`mb-2 flex-row items-center justify-between rounded-2xl border border-edge bg-white p-3.5 ${
+                item.available ? '' : 'opacity-55'
+              }`}
+            >
+              <View className={item.photoUrl ? 'shrink flex-row items-center gap-2.5' : 'shrink gap-0.5'}>
+                {item.photoUrl ? (
+                  <Image
+                    source={{ uri: mediaUrl(item.photoUrl) ?? '' }}
+                    className="rounded-lg"
+                    style={{ width: 52, height: 52 }}
+                  />
+                ) : null}
+                <View className="shrink">
+                  <Text className="text-base font-semibold text-ink">{item.name}</Text>
+                  <Text className="text-muted">
                     {item.type === 'servicio' ? 'servicio' : item.unit ?? 'unidad'}
                     {!item.available ? ' · oculto' : ''}
                   </Text>
                 </View>
               </View>
-              <View style={styles.rowRight}>
-                <Text style={styles.price}>{formatPrice(item.price)}</Text>
-                <Pressable style={styles.smallBtnGhost} onPress={() => startEdit(item)}>
-                  <Text style={styles.smallBtnGhostText}>Editar</Text>
+              <View className="items-end gap-1.5">
+                <Text className="text-base font-bold text-brand-700">{formatPrice(item.price)}</Text>
+                <Pressable className="self-end" onPress={() => startEdit(item)}>
+                  <Text className="font-semibold text-muted">Editar</Text>
                 </Pressable>
-                <Pressable style={styles.smallBtnGhost} onPress={() => void toggleAvailable(item)}>
-                  <Text style={styles.smallBtnGhostText}>{item.available ? 'Ocultar' : 'Mostrar'}</Text>
+                <Pressable className="self-end" onPress={() => void toggleAvailable(item)}>
+                  <Text className="font-semibold text-muted">
+                    {item.available ? 'Ocultar' : 'Mostrar'}
+                  </Text>
                 </Pressable>
-                <Pressable style={styles.smallBtnDanger} onPress={() => void removeItem(item)}>
-                  <Text style={styles.smallBtnDangerText}>Borrar</Text>
+                <Pressable
+                  className="self-end rounded-lg bg-red-600 px-2.5 py-1.5 active:opacity-70"
+                  onPress={() => void removeItem(item)}
+                >
+                  <Text className="font-semibold text-white">Borrar</Text>
                 </Pressable>
               </View>
             </View>
@@ -339,160 +370,3 @@ export default function BusinessItemsScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  muted: {
-    color: COLORS.muted,
-    marginBottom: 12,
-  },
-  form: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 12,
-    gap: 8,
-  },
-  formRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  label: {
-    marginTop: 4,
-    fontSize: 13,
-    color: COLORS.muted,
-    fontWeight: '600',
-  },
-  photoRow: {
-    gap: 10,
-    marginBottom: 4,
-  },
-  photoBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    alignSelf: 'flex-start',
-  },
-  photoBtnDisabled: {
-    opacity: 0.6,
-  },
-  photoBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  photoPreviewWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  photoPreview: {
-    width: 72,
-    height: 72,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  photoClear: {
-    color: COLORS.danger,
-    fontWeight: '600',
-  },
-  typeBtn: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    flex: 1,
-  },
-  typeBtnActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  typeBtnText: {
-    color: COLORS.muted,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  typeBtnTextActive: {
-    color: '#fff',
-  },
-  unitBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  unitBtnActive: {
-    backgroundColor: COLORS.primary,
-  },
-  unitText: {
-    color: COLORS.muted,
-    fontSize: 13,
-  },
-  unitTextActive: {
-    color: '#fff',
-  },
-  row: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  rowOff: {
-    opacity: 0.55,
-  },
-  rowLeft: {
-    flexShrink: 1,
-    gap: 2,
-  },
-  rowLeftWithPhoto: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  itemThumb: {
-    width: 52,
-    height: 52,
-    borderRadius: 8,
-  },
-  rowRight: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  itemName: {
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  price: {
-    fontWeight: '700',
-    color: COLORS.primary,
-    fontSize: 16,
-  },
-  smallBtnGhost: {
-    alignSelf: 'flex-end',
-  },
-  smallBtnGhostText: {
-    color: COLORS.muted,
-    fontWeight: '600',
-  },
-  smallBtnDanger: {
-    backgroundColor: COLORS.danger,
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    alignSelf: 'flex-end',
-  },
-  smallBtnDangerText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-});

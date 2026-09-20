@@ -1,11 +1,14 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { App, Button, Popconfirm, Select, Tag, Upload } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import { api } from '../api/client';
 import type { Business, BusinessItem, ItemType, ProductCategory } from '../api/types';
 import { formatPrice } from '../lib/format';
 import { Alert, EmptyState, Field, Loading } from '../components/ui';
 
 const ITEM_UNITS = ['unidad', 'kg', 'litro', 'paquete'] as const;
+const ACCEPTED = 'image/jpeg,image/png,image/webp,image/gif';
 
 type ItemForm = {
   type: ItemType;
@@ -31,6 +34,7 @@ const INITIAL: ItemForm = {
 
 export function BusinessItemsPage() {
   const { id } = useParams<{ id: string }>();
+  const { message } = App.useApp();
   const [business, setBusiness] = useState<Business | null>(null);
   const [items, setItems] = useState<BusinessItem[]>([]);
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
@@ -108,6 +112,7 @@ export function BusinessItemsPage() {
       setForm(INITIAL);
       setEditing(null);
       setNewCategory(false);
+      message.success(editing ? 'Producto actualizado' : 'Producto agregado');
       await load();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'No se pudo guardar el producto');
@@ -138,12 +143,9 @@ export function BusinessItemsPage() {
     setForm(INITIAL);
   }
 
-  async function onPhotoChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  async function uploadPhoto(file: File) {
     if (file.size > 5 * 1024 * 1024) {
       setFormError('El archivo es demasiado grande (máximo 5 MB)');
-      event.target.value = '';
       return;
     }
     const body = new FormData();
@@ -157,7 +159,6 @@ export function BusinessItemsPage() {
       setFormError(e instanceof Error ? e.message : 'No se pudo subir la foto');
     } finally {
       setPhotoUploading(false);
-      event.target.value = '';
     }
   }
 
@@ -171,10 +172,8 @@ export function BusinessItemsPage() {
   }
 
   async function removeItem(item: BusinessItem) {
-    if (!window.confirm(`¿Eliminar "${item.name}"?`)) {
-      return;
-    }
     await api(`/items/${item.id}`, { method: 'DELETE', auth: true });
+    message.success('Producto eliminado');
     await load();
   }
 
@@ -182,171 +181,246 @@ export function BusinessItemsPage() {
     return <Loading />;
   }
   if (error) {
-    return <p className="alert alert-error">{error}</p>;
+    return <p className="text-sm text-red-600">{error}</p>;
   }
   if (!business) {
     return <EmptyState message="Negocio no encontrado." />;
   }
 
   return (
-    <div className="page">
-      <Link to="/mis-negocios" className="back-link">
+    <div>
+      <Link to="/mis-negocios" className="text-sm font-medium text-brand-700 hover:text-brand-800">
         ← Volver a mis negocios
       </Link>
-      <h1>{business.name}</h1>
-      <p className="muted">{business.active ? 'Activo' : 'Desactivado'} · {items.length} producto{items.length === 1 ? '' : 's'}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{business.name}</h1>
+        <Tag color={business.active ? 'green' : 'default'}>
+          {business.active ? 'Activo' : 'Desactivado'}
+        </Tag>
+      </div>
+      <p className="mt-1 text-sm text-slate-500">
+        {items.length} producto{items.length === 1 ? '' : 's'}
+      </p>
 
-      <form onSubmit={addItem} className="form card">
-        <div className="form-header">
-          <h2>{editing ? 'Editar producto' : 'Nuevo producto'}</h2>
+      <form
+        onSubmit={addItem}
+        className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">
+            {editing ? 'Editar producto' : 'Nuevo producto'}
+          </h2>
           {editing && (
-            <button type="button" className="btn btn-secondary btn-sm" onClick={cancelEdit}>
+            <Button size="small" onClick={cancelEdit}>
               Cancelar edición
-            </button>
+            </Button>
           )}
         </div>
-        {formError && <Alert kind="error">{formError}</Alert>}
-        <div className="form-row">
-          <label className="field">
-            <span className="field-label">Tipo</span>
-            <select className="field-input" value={form.type} onChange={(e) => setFormField('type', e.target.value)}>
-              <option value="producto">Producto</option>
-              <option value="servicio">Servicio</option>
-            </select>
-          </label>
-          {form.type === 'producto' && (
-            <label className="field">
-              <span className="field-label">Unidad</span>
-              <select className="field-input" value={form.unit} onChange={(e) => setFormField('unit', e.target.value)}>
-                {ITEM_UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
+
+        <div className="mt-4">
+          {formError && <Alert kind="error">{formError}</Alert>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-slate-600">Tipo</span>
+              <Select
+                className="w-full"
+                value={form.type}
+                onChange={(v) => setFormField('type', v)}
+                options={[
+                  { value: 'producto', label: 'Producto' },
+                  { value: 'servicio', label: 'Servicio' },
+                ]}
+              />
+            </label>
+            {form.type === 'producto' && (
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-600">Unidad</span>
+                <Select
+                  className="w-full"
+                  value={form.unit}
+                  onChange={(v) => setFormField('unit', v)}
+                  options={ITEM_UNITS.map((u) => ({ value: u, label: u }))}
+                />
+              </label>
+            )}
+          </div>
+
+          <Field
+            label="Nombre *"
+            value={form.name}
+            onChange={(e) => setFormField('name', e.target.value)}
+            maxLength={200}
+            placeholder="Ej. Café con leche"
+          />
+
+          {newCategory ? (
+            <div>
+              <Field
+                label="Nueva categoría *"
+                value={form.newCategoryName}
+                onChange={(e) => setFormField('newCategoryName', e.target.value)}
+                maxLength={60}
+                placeholder="Ej. Panadería"
+              />
+              <Button
+                size="small"
+                className="mb-3"
+                onClick={() => {
+                  setNewCategory(false);
+                  setFormField('newCategoryName', '');
+                }}
+              >
+                Elegir una categoría existente
+              </Button>
+            </div>
+          ) : (
+            <label className="mb-3 block">
+              <span className="mb-1 block text-sm font-medium text-slate-600">Categoría *</span>
+              <Select
+                className="w-full"
+                value={form.categoryId || undefined}
+                placeholder="Selecciona una categoría…"
+                onChange={(v) => {
+                  if (v === '__new__') {
+                    setNewCategory(true);
+                    setFormField('categoryId', '');
+                  } else {
+                    setFormField('categoryId', v ?? '');
+                  }
+                }}
+                options={[
+                  ...productCategories.map((c) => ({ value: c.id, label: c.name })),
+                  { value: '__new__', label: '+ Crear nueva categoría…' },
+                ]}
+              />
             </label>
           )}
-        </div>
-        <Field label="Nombre *" value={form.name} onChange={(e) => setFormField('name', e.target.value)} maxLength={200} placeholder="Ej. Café con leche" />
-        {newCategory ? (
-          <>
-            <Field
-              label="Nueva categoría *"
-              value={form.newCategoryName}
-              onChange={(e) => setFormField('newCategoryName', e.target.value)}
-              maxLength={60}
-              placeholder="Ej. Panadería"
-            />
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                setNewCategory(false);
-                setFormField('newCategoryName', '');
-              }}
-            >
-              Elegir una categoría existente
-            </button>
-          </>
-        ) : (
-          <label className="field">
-            <span className="field-label">Categoría *</span>
-            <select
-              className="field-input"
-              value={form.categoryId}
-              onChange={(e) => {
-                if (e.target.value === '__new__') {
-                  setNewCategory(true);
-                  setFormField('categoryId', '');
-                } else {
-                  setFormField('categoryId', e.target.value);
-                }
-              }}
-            >
-              <option value="">Selecciona una categoría…</option>
-              {productCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-              <option value="__new__">+ Crear nueva categoría…</option>
-            </select>
-          </label>
-        )}
-        <Field label="Descripción" value={form.description} onChange={(e) => setFormField('description', e.target.value)} maxLength={500} />
-        <label className="field">
-            <span className="field-label">Foto del producto</span>
-            <input
-              className="field-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={(e) => void onPhotoChange(e)}
-            />
-            {photoUploading && <span className="field-error">Subiendo foto…</span>}
-          </label>
-          {!photoUploading && form.photoUrl && (
-            <div className="item-photo-content">
-              <img src={form.photoUrl} alt="" className="item-thumb" decoding="async" />
-              <span className="muted">Foto cargada</span>
+
+          <Field
+            label="Descripción"
+            value={form.description}
+            onChange={(e) => setFormField('description', e.target.value)}
+            maxLength={500}
+          />
+
+          <div className="mb-3">
+            <span className="mb-1 block text-sm font-medium text-slate-600">Foto del producto</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <Upload
+                accept={ACCEPTED}
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  void uploadPhoto(file);
+                  return false;
+                }}
+              >
+                <Button icon={<UploadOutlined />} loading={photoUploading}>
+                  {photoUploading ? 'Subiendo…' : 'Subir foto'}
+                </Button>
+              </Upload>
+              {!photoUploading && form.photoUrl && (
+                <img
+                  src={form.photoUrl}
+                  alt=""
+                  decoding="async"
+                  className="h-14 w-14 rounded-lg border border-slate-200 object-cover"
+                />
+              )}
             </div>
-          )}
-        <Field label="Precio (CUP) *" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setFormField('price', e.target.value)} />
-        <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim() || !form.price || (!form.categoryId && !(newCategory && form.newCategoryName.trim()))}>
-          {busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar producto'}
-        </button>
+          </div>
+
+          <Field
+            label="Precio (CUP) *"
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.price}
+            onChange={(e) => setFormField('price', e.target.value)}
+          />
+
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={busy}
+            disabled={
+              !form.name.trim() ||
+              !form.price ||
+              (!form.categoryId && !(newCategory && form.newCategoryName.trim()))
+            }
+          >
+            {editing ? 'Guardar cambios' : 'Agregar producto'}
+          </Button>
+        </div>
       </form>
 
-      <h2 className="section-title">Catálogo actual</h2>
+      <h2 className="mt-8 text-lg font-semibold text-slate-900">Catálogo actual</h2>
       {items.length === 0 && (
         <EmptyState
           message="Este negocio todavía no tiene productos."
           action={
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
+            <Button
+              type="primary"
+              size="small"
               onClick={() => {
                 cancelEdit();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             >
               Agregar primer producto
-            </button>
+            </Button>
           }
         />
       )}
-      <ul className="item-list">
-        {items.map((item) => (
-          <li key={item.id} className={`item-row${item.available ? '' : ' item-off'}`}>
-            <div className={item.photoUrl ? 'item-photo-content' : undefined}>
-              {item.photoUrl && (
-                <img src={item.photoUrl} alt="" className="item-thumb" loading="lazy" decoding="async" />
-              )}
-              <div>
-                <div className="item-name">
-                  {item.name}{' '}
-                  <span className="chip">
-                    {item.type === 'producto' ? item.unit ?? 'unidad' : 'servicio'}
-                  </span>
-                  {!item.available && <span className="chip chip-off">oculto</span>}
+      {items.length > 0 && (
+        <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-center gap-3">
+                {item.photoUrl && (
+                  <img
+                    src={item.photoUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-12 w-12 shrink-0 rounded-lg border border-slate-200 object-cover"
+                  />
+                )}
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
+                    {item.name}
+                    <Tag>{item.type === 'producto' ? item.unit ?? 'unidad' : 'servicio'}</Tag>
+                    {!item.available && <Tag color="default">oculto</Tag>}
+                  </div>
+                  {item.description && <p className="text-sm text-slate-500">{item.description}</p>}
                 </div>
-                {item.description && <p className="muted">{item.description}</p>}
               </div>
-            </div>
-            <div className="item-row-actions">
-              <span className="item-price">{formatPrice(item.price)}</span>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => startEdit(item)}>
-                Editar
-              </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => void toggleAvailable(item)}>
-                {item.available ? 'Ocultar' : 'Mostrar'}
-              </button>
-              <button type="button" className="btn btn-danger btn-sm" onClick={() => void removeItem(item)}>
-                Eliminar
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <span className="font-bold text-brand-700">{formatPrice(item.price)}</span>
+                <Button size="small" onClick={() => startEdit(item)}>
+                  Editar
+                </Button>
+                <Button size="small" type="text" onClick={() => void toggleAvailable(item)}>
+                  {item.available ? 'Ocultar' : 'Mostrar'}
+                </Button>
+                <Popconfirm
+                  title={`¿Eliminar "${item.name}"?`}
+                  okText="Eliminar"
+                  cancelText="Cancelar"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() => void removeItem(item)}
+                >
+                  <Button size="small" danger>
+                    Eliminar
+                  </Button>
+                </Popconfirm>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

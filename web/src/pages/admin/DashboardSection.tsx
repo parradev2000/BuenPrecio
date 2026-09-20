@@ -1,90 +1,109 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Button, Card, Col, Empty, Row, Skeleton, Statistic } from 'antd';
+import { ReloadOutlined, ShopOutlined, ShoppingOutlined, ToolOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
 import type { AdminStats } from '../../api/types';
-import { Alert, Loading } from '../../components/ui';
+import { Alert } from '../../components/ui';
+import { BarChart } from '../../components/BarChart';
+import { PieChart } from '../../components/PieChart';
 
-const CHART_HEIGHT = 180;
-const PRODUCT_COLOR = 'var(--primary-dark)';
-const SERVICES_COLOR = '#e19125';
+const PRODUCT_COLOR = '#059669';
+const SERVICE_COLOR = '#d97706';
 
-function StatCard({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="stat-card">
-      <div className="stat-value">{value}</div>
-      <div className="stat-label">{label}</div>
-    </div>
-  );
-}
+/** Categorical palette for pie slices, cycled when there are more slices than colors. */
+const PIE_COLORS = [
+  '#059669',
+  '#2563eb',
+  '#d97706',
+  '#7c3aed',
+  '#0891b2',
+  '#db2777',
+  '#65a30d',
+  '#e11d48',
+  '#0f766e',
+  '#f59e0b',
+];
 
-function barHeight(value: number, max: number) {
-  return Math.max(2, Math.round((value / max) * CHART_HEIGHT));
-}
-
-function ChartBar({ value, max, color }: { value: number; max: number; color: string }) {
-  return (
-    <div className="bar-col">
-      <span className="bar-value">{value}</span>
-      <div className="chart-bar" style={{ height: `${barHeight(value, max)}px`, backgroundColor: color }} />
-    </div>
-  );
-}
+const EMPTY_TEXT = 'Sin datos todavía.';
 
 type CountRow = { name: string; count: number };
 
-function BarChart({ title, rows, color }: { title: string; rows: CountRow[]; color: string }) {
-  const max = Math.max(1, ...rows.map((r) => r.count));
+function toSlices(rows: CountRow[]) {
+  return rows.map((row, index) => ({
+    key: `${index}-${row.name}`,
+    label: row.name,
+    color: PIE_COLORS[index % PIE_COLORS.length],
+    value: row.count,
+  }));
+}
+
+function StatBlock({
+  title,
+  value,
+  color,
+  icon,
+}: {
+  title: string;
+  value: number;
+  color: string;
+  icon: React.ReactNode;
+}) {
   return (
-    <div className="chart">
-      <h3 className="chart-title">{title}</h3>
-      {rows.length === 0 ? (
-        <p className="chart-empty">Sin datos todavía.</p>
-      ) : (
-        <div className="chart-scroll">
-          <div className="chart-groups">
-            {rows.map((row) => (
-              <div key={row.name} className="chart-group">
-                <ChartBar value={row.count} max={max} color={color} />
-                <span className="chart-name">{row.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    <Card className="h-full">
+      <Statistic title={title} value={value} prefix={icon} styles={{ content: { color } }} />
+    </Card>
   );
 }
 
-function PerBusinessChart({ rows }: { rows: { name: string; products: number; services: number }[] }) {
-  const max = Math.max(1, ...rows.map((r) => r.products + r.services));
+function ChartCard({
+  title,
+  labels,
+  series,
+}: {
+  title: string;
+  labels: string[];
+  series: { key: string; label: string; color: string; values: number[] }[];
+}) {
   return (
-    <div className="chart">
-      <h3 className="chart-title">Productos y servicios por negocio</h3>
-      <div className="chart-legend">
-        <span className="legend-item">
-          <span className="legend-dot legend-dot-products" /> Productos
-        </span>
-        <span className="legend-item">
-          <span className="legend-dot legend-dot-services" /> Servicios
-        </span>
-      </div>
-      {rows.length === 0 ? (
-        <p className="chart-empty">Sin datos todavía.</p>
+    <Card title={title} className="h-full">
+      {labels.length === 0 ? (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={EMPTY_TEXT} />
       ) : (
-        <div className="chart-scroll">
-          <div className="chart-groups">
-            {rows.map((row) => (
-              <div key={row.name} className="chart-group">
-                <div className="chart-bars">
-                  <ChartBar value={row.products} max={max} color={PRODUCT_COLOR} />
-                  <ChartBar value={row.services} max={max} color={SERVICES_COLOR} />
-                </div>
-                <span className="chart-name">{row.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <BarChart labels={labels} series={series} />
       )}
-    </div>
+    </Card>
+  );
+}
+
+function PieCard({ title, rows }: { title: string; rows: CountRow[] }) {
+  const hasData = rows.some((row) => row.count > 0);
+  return (
+    <Card title={title} className="h-full">
+      {hasData ? (
+        <PieChart slices={toSlices(rows)} />
+      ) : (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={EMPTY_TEXT} />
+      )}
+    </Card>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <Row gutter={[16, 16]}>
+      {[0, 1, 2].map((i) => (
+        <Col key={i} xs={24} sm={12} lg={8}>
+          <Card>
+            <Skeleton active paragraph={{ rows: 1 }} />
+          </Card>
+        </Col>
+      ))}
+      <Col span={24}>
+        <Card>
+          <Skeleton active paragraph={{ rows: 4 }} />
+        </Card>
+      </Col>
+    </Row>
   );
 }
 
@@ -110,35 +129,90 @@ export function DashboardSection() {
     void load();
   }, [load]);
 
-  if (loading) return <Loading />;
-
-  if (error) return <Alert kind="error">{error}</Alert>;
-
-  if (!stats) return null;
-
   return (
-    <section className="admin-card">
-      <div className="admin-head">
+    <section>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2>Dashboard</h2>
-          <p className="admin-sub">Datos generales de la plataforma.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500">Datos generales de la plataforma.</p>
         </div>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => void load()}>
+        <Button icon={<ReloadOutlined />} loading={loading} onClick={() => void load()}>
           Actualizar
-        </button>
+        </Button>
       </div>
 
-      <div className="stat-grid">
-        <StatCard value={stats.totals.businesses} label="Negocios" />
-        <StatCard value={stats.totals.products} label="Productos" />
-        <StatCard value={stats.totals.services} label="Servicios" />
-      </div>
+      {error && (
+        <div className="mb-4">
+          <Alert kind="error">{error}</Alert>
+        </div>
+      )}
 
-      <PerBusinessChart rows={stats.byBusiness} />
+      {loading && !stats ? (
+        <DashboardSkeleton />
+      ) : !stats ? null : (
+        <div className="flex flex-col gap-4">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} lg={8}>
+              <StatBlock
+                title="Negocios"
+                value={stats.totals.businesses}
+                color={PRODUCT_COLOR}
+                icon={<ShopOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <StatBlock
+                title="Productos"
+                value={stats.totals.products}
+                color="#0f172a"
+                icon={<ShoppingOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <StatBlock
+                title="Servicios"
+                value={stats.totals.services}
+                color={SERVICE_COLOR}
+                icon={<ToolOutlined />}
+              />
+            </Col>
+          </Row>
 
-      <BarChart title="Negocios por tipo de negocio" rows={stats.businessesByCategory} color="#0b7a4b" />
+          <ChartCard
+            title="Productos y servicios por negocio"
+            labels={stats.byBusiness.map((b) => b.name)}
+            series={[
+              {
+                key: 'products',
+                label: 'Productos',
+                color: PRODUCT_COLOR,
+                values: stats.byBusiness.map((b) => b.products),
+              },
+              {
+                key: 'services',
+                label: 'Servicios',
+                color: SERVICE_COLOR,
+                values: stats.byBusiness.map((b) => b.services),
+              },
+            ]}
+          />
 
-      <BarChart title="Productos por categoría de producto" rows={stats.productsByCategory} color="#2d6cdf" />
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <PieCard
+                title="Negocios por tipo de negocio"
+                rows={stats.businessesByCategory}
+              />
+            </Col>
+            <Col xs={24} md={12}>
+              <PieCard
+                title="Productos por categoría de producto"
+                rows={stats.productsByCategory}
+              />
+            </Col>
+          </Row>
+        </div>
+      )}
     </section>
   );
 }

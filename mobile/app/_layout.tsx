@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import '../global.css';
 import { AccountHeaderButton } from '../src/components/AccountHeaderButton';
 import { AuthProvider } from '../src/context/AuthContext';
 import { COLORS } from '../src/lib/format';
@@ -13,6 +14,7 @@ export default function RootLayout() {
           headerTitleStyle: { fontWeight: '700' },
           headerStyle: { backgroundColor: '#fff' },
           contentStyle: { backgroundColor: COLORS.bg },
+          headerShadowVisible: false,
           headerRight: () => <AccountHeaderButton />,
         }}
       >

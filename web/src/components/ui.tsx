@@ -1,40 +1,50 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import {
+  Alert as AntAlert,
+  Empty,
+  Input,
+  Pagination as AntPagination,
+  Spin,
+  type InputProps,
+} from 'antd';
 
 type FieldProps = {
   label: string;
   error?: string | null;
-} & InputHTMLAttributes<HTMLInputElement>;
+} & InputProps;
 
 export function Field({ label, error, ...rest }: FieldProps) {
   return (
-    <label className="field">
-      <span className="field-label">{label}</span>
-      <input className={`field-input${error ? ' field-input-error' : ''}`} {...rest} />
-      {error && <span className="field-error">{error}</span>}
+    <label className="mb-3 block">
+      <span className="mb-1 block text-sm font-medium text-slate-600">{label}</span>
+      <Input status={error ? 'error' : undefined} {...rest} />
+      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
     </label>
   );
 }
 
 export function Alert({ kind, children }: { kind: 'error' | 'success' | 'info'; children: ReactNode }) {
-  return <div className={`alert alert-${kind}`}>{children}</div>;
+  return <AntAlert className="mb-3" type={kind} message={children} showIcon />;
 }
 
 export function Loading() {
-  return <div className="loading">Cargando…</div>;
+  return (
+    <div className="flex justify-center py-10">
+      <Spin />
+    </div>
+  );
 }
 
 export function EmptyState({ message, action }: { message: string; action?: ReactNode }) {
   return (
-    <div className="empty">
-      {message}
-      {action && <div className="empty-action">{action}</div>}
+    <div className="py-8">
+      <Empty description={message}>{action}</Empty>
     </div>
   );
 }
 
 export function Pagination({
   page,
-  pages,
   total,
   pageSize,
   onChange,
@@ -49,24 +59,17 @@ export function Pagination({
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
   return (
-    <div className="pagination">
-      <span className="pagination-info">
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <span className="text-sm text-slate-500">
         {from}–{to} de {total}
       </span>
-      <button type="button" className="btn btn-ghost btn-sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>
-        Anterior
-      </button>
-      <span className="pagination-current">
-        Página {page} de {pages}
-      </span>
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm"
-        disabled={page >= pages}
-        onClick={() => onChange(page + 1)}
-      >
-        Siguiente
-      </button>
+      <AntPagination
+        current={page}
+        pageSize={pageSize}
+        total={total}
+        showSizeChanger={false}
+        onChange={onChange}
+      />
     </div>
   );
 }

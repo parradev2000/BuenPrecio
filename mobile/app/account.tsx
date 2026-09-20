@@ -3,9 +3,8 @@ import { ScrollView, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { api } from '../src/api/client';
 import type { Application } from '../src/api/types';
-import { Alert, Button, Loading, Screen, TextField } from '../src/components/ui';
+import { Alert, Button, Card, Loading, Screen, TextField } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
-import { COLORS } from '../src/lib/format';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'En revisión',
@@ -92,18 +91,20 @@ export default function AccountScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{session.user.name}</Text>
-          <Text style={styles.muted}>{session.user.email}</Text>
-          <Text style={styles.muted}>Rol: {roleLabel}</Text>
-        </View>
+        <Card className="mb-3">
+          <Text className="text-lg font-bold text-ink">{session.user.name}</Text>
+          <Text className="text-sm text-muted">{session.user.email}</Text>
+          <View className="self-start rounded-full bg-brand-50 px-3 py-1">
+            <Text className="text-[13px] font-bold text-brand-700">{roleLabel}</Text>
+          </View>
+        </Card>
 
         {error && <Alert kind="error">{error}</Alert>}
 
         {session.user.role === 'consumidor' && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Ser productor</Text>
-            <Text style={styles.muted}>
+          <Card className="mb-3">
+            <Text className="text-base font-bold text-ink">Ser productor</Text>
+            <Text className="text-sm text-muted">
               Publica y gestiona tus negocios y su catálogo. Un administrador revisará tu solicitud.
             </Text>
             {application === undefined && <Loading />}
@@ -116,56 +117,51 @@ export default function AccountScreen() {
             )}
             {application !== null && application !== undefined && (
               <>
-                <Text style={styles.muted}>Estado: {STATUS_LABEL[application.status]}</Text>
+                <Text className="text-sm text-muted">Estado: {STATUS_LABEL[application.status]}</Text>
                 {application.status === 'rejected' && (
                   <Button title="Volver a solicitar" onPress={() => void requestProducer()} disabled={busy} />
                 )}
                 {application.status === 'approved' && (
-                  <Text style={styles.muted}>
+                  <Text className="text-sm text-muted">
                     Ya eres productor. Ve a <Link href="/my-businesses">Mis negocios</Link>.
                   </Text>
                 )}
               </>
             )}
-          </View>
+          </Card>
         )}
 
         {session.user.role === 'administrador' && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Administración</Text>
-            <Text style={styles.muted}>Solicitudes, usuarios y negocios.</Text>
-            <Button
-              title="Abrir panel de administración"
-              onPress={() => router.push('/admin')}
-            />
-          </View>
+          <Card className="mb-3">
+            <Text className="text-base font-bold text-ink">Administración</Text>
+            <Text className="text-sm text-muted">Solicitudes, usuarios y negocios.</Text>
+            <Button title="Abrir panel de administración" onPress={() => router.push('/admin')} />
+          </Card>
         )}
 
         {session.user.role === 'productor' && (
-          <Text style={styles.muted}>
+          <Text className="mb-3 text-sm text-muted">
             Gestiona tus negocios en <Link href="/my-businesses">Mis negocios</Link>.
           </Text>
         )}
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Servidor</Text>
-          <Text style={styles.muted}>
-            ¿La app no se conecta? Cambia aquí la dirección de la API (por si
-            cambió la IP de tu red) sin recompilar.
+        <Card className="mb-3">
+          <Text className="text-base font-bold text-ink">Servidor</Text>
+          <Text className="text-sm text-muted">
+            ¿La app no se conecta? Cambia aquí la dirección de la API (por si cambió la IP de tu red)
+            sin recompilar.
           </Text>
           <Button title="Configurar servidor" onPress={() => router.push('/servidor')} />
-        </View>
+        </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Contáctanos</Text>
-          <Text style={styles.muted}>
-            Información del desarrollador y dueño de la aplicación.
-          </Text>
+        <Card className="mb-3">
+          <Text className="text-base font-bold text-ink">Contáctanos</Text>
+          <Text className="text-sm text-muted">Información del desarrollador y dueño de la aplicación.</Text>
           <Button variant="secondary" title="Ver contacto" onPress={() => router.push('/contact')} />
-        </View>
+        </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Cambiar contraseña</Text>
+        <Card className="mb-3">
+          <Text className="text-base font-bold text-ink">Cambiar contraseña</Text>
           {pwMessage && <Alert kind="success">{pwMessage}</Alert>}
           {pwError && <Alert kind="error">{pwError}</Alert>}
           <TextField
@@ -187,34 +183,10 @@ export default function AccountScreen() {
             onPress={() => void changePassword()}
             disabled={pwBusy}
           />
-        </View>
+        </Card>
 
         <Button variant="ghost" title="Salir" onPress={() => void logout().then(() => router.replace('/'))} />
       </ScrollView>
     </Screen>
   );
 }
-
-const styles = {
-  card: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  muted: {
-    color: COLORS.muted,
-    marginTop: 4,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-} as const;

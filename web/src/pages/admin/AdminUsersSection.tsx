@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import { App, Button, Input, Popconfirm, Select, Table, Tag, type TableProps } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { ROLE_LABELS } from '@buenprecio/shared';
 import { api } from '../../api/client';
 import type { AdminUser, RoleName } from '../../api/types';
-import { Alert, EmptyState, Loading, Pagination } from '../../components/ui';
+import { Alert } from '../../components/ui';
 
 const ROLE_OPTIONS: RoleName[] = ['consumidor', 'productor', 'administrador'];
-const PAGE_SIZE = 10;
-
-const STATUS_BADGE: Record<AdminUser['status'], string> = {
-  active: 'badge-success',
-  suspended: 'badge-danger',
-};
-
-const STATUS_LABEL: Record<AdminUser['status'], string> = {
-  active: 'Activo',
-  suspended: 'Suspendido',
-};
 
 function initials(name: string) {
   return name
@@ -27,22 +18,13 @@ function initials(name: string) {
 }
 
 export function AdminUsersSection() {
+  const { message } = App.useApp();
   const [items, setItems] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-
-  const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-
-  useEffect(() => {
-    if (page > pages) setPage(pages);
-  }, [page, pages]);
-
-  const start = (page - 1) * PAGE_SIZE;
-  const paged = items.slice(start, start + PAGE_SIZE);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,6 +51,7 @@ export function AdminUsersSection() {
     setError(null);
     try {
       await api(`/admin/users/${user.id}`, { method: 'PATCH', body: patch, auth: true });
+      message.success('Usuario actualizado');
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo actualizar');
@@ -78,13 +61,11 @@ export function AdminUsersSection() {
   }
 
   async function remove(user: AdminUser) {
-    if (!window.confirm(`¿Eliminar a ${user.name} (${user.email})? Se borrarán sus negocios y productos.`)) {
-      return;
-    }
     setBusyId(user.id);
     setError(null);
     try {
       await api(`/admin/users/${user.id}`, { method: 'DELETE', auth: true });
+      message.success('Usuario eliminado');
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo eliminar');
@@ -93,113 +74,122 @@ export function AdminUsersSection() {
     }
   }
 
-  return (
-    <section className="admin-card">
-      <div className="admin-head">
-        <h2>Usuarios</h2>
-        <div className="admin-filters">
-          <input
-            className="field-input"
-            placeholder="Buscar por nombre…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
-          <select
-            className="field-input"
-            value={role}
-            onChange={(e) => {
-              setRole(e.target.value);
-              setPage(1);
-            }}
+  const columns: TableProps<AdminUser>['columns'] = [
+    {
+      title: 'Usuario',
+      key: 'user',
+      render: (_, u) => (
+        <span className="flex items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-700">
+            {initials(u.name)}
+          </span>
+          <span className="flex flex-col">
+            <strong className="font-medium text-slate-900">{u.name}</strong>
+            <span className="text-xs text-slate-500">{u.email}</span>
+          </span>
+        </span>
+      ),
+    },
+    {
+      title: 'Creado',
+      dataIndex: 'createdAt',
+      responsive: ['sm'],
+      render: (value: string) => (
+        <span className="text-slate-500">{new Date(value).toLocaleDateString('es-CU')}</span>
+      ),
+    },
+    {
+      title: 'Rol',
+      key: 'role',
+      render: (_, u) => (
+        <Select
+          size="small"
+          className="min-w-36"
+          value={u.role}
+          disabled={busyId === u.id}
+          onChange={(value) => void change(u, { role: value })}
+          options={ROLE_OPTIONS.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+        />
+      ),
+    },
+    {
+      title: 'Estado',
+      key: 'status',
+      render: (_, u) => (
+        <Tag color={u.status === 'active' ? 'green' : 'red'}>
+          {u.status === 'active' ? 'Activo' : 'Suspendido'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Acciones',
+      key: 'actions',
+      render: (_, u) => (
+        <div className="flex gap-2">
+          <Button
+            size="small"
+            disabled={busyId === u.id}
+            onClick={() => void change(u, { status: u.status === 'active' ? 'suspended' : 'active' })}
           >
-            <option value="">Todos los roles</option>
-            {ROLE_OPTIONS.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABELS[r]}
-              </option>
-            ))}
-          </select>
+            {u.status === 'active' ? 'Suspender' : 'Activar'}
+          </Button>
+          <Popconfirm
+            title="Eliminar usuario"
+            description={`¿Eliminar a ${u.name}? Se borrarán sus negocios y productos.`}
+            okText="Eliminar"
+            cancelText="Cancelar"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => void remove(u)}
+          >
+            <Button size="small" danger disabled={busyId === u.id}>
+              Eliminar
+            </Button>
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <section>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">Usuarios</h2>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Input
+            allowClear
+            placeholder="Buscar por nombre…"
+            prefix={<SearchOutlined className="text-slate-400" />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="sm:w-56"
+          />
+          <Select
+            value={role || undefined}
+            placeholder="Todos los roles"
+            allowClear
+            onChange={(v) => setRole(v ?? '')}
+            className="sm:w-44"
+            options={ROLE_OPTIONS.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+          />
         </div>
       </div>
 
-      {error && <Alert kind="error">{error}</Alert>}
-      {loading && <Loading />}
-      {!loading && items.length === 0 && <EmptyState message="No hay usuarios que coincidan." />}
-
-      {!loading && items.length > 0 && (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th className="hide-sm">Creado</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paged.map((u) => (
-                <tr key={u.id}>
-                  <td data-label="Usuario">
-                    <span className="admin-cell-user">
-                      <span className="avatar-initial">{initials(u.name)}</span>
-                      <span className="cell-meta">
-                        <strong>{u.name}</strong>
-                        <span className="cell-muted">{u.email}</span>
-                      </span>
-                    </span>
-                  </td>
-                  <td className="cell-muted hide-sm" data-label="Creado">{new Date(u.createdAt).toLocaleDateString('es-CU')}</td>
-                  <td data-label="Rol">
-                    <select
-                      className="field-input field-input-sm"
-                      value={u.role}
-                      disabled={busyId === u.id}
-                      onChange={(e) => void change(u, { role: e.target.value as RoleName })}
-                    >
-                      {ROLE_OPTIONS.map((r) => (
-                        <option key={r} value={r}>
-                          {ROLE_LABELS[r]}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td data-label="Estado">
-                    <span className={`badge ${STATUS_BADGE[u.status]}`}>{STATUS_LABEL[u.status]}</span>
-                  </td>
-                  <td data-label="Acciones">
-                    <div className="item-row-actions">
-                      <button
-                        type="button"
-                        className={`btn btn-sm ${u.status === 'active' ? 'btn-secondary' : 'btn-ghost'}`}
-                        disabled={busyId === u.id}
-                        onClick={() => void change(u, { status: u.status === 'active' ? 'suspended' : 'active' })}
-                      >
-                        {u.status === 'active' ? 'Suspender' : 'Activar'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        disabled={busyId === u.id}
-                        onClick={() => void remove(u)}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-</tbody>
-            </table>
+      {error && (
+        <div className="mt-3">
+          <Alert kind="error">{error}</Alert>
         </div>
       )}
-      {!loading && items.length > 0 && (
-        <Pagination page={page} pages={pages} total={items.length} pageSize={PAGE_SIZE} onChange={setPage} />
-      )}
+
+      <Table<AdminUser>
+        className="mt-3"
+        rowKey="id"
+        loading={loading}
+        dataSource={items}
+        columns={columns}
+        scroll={{ x: 'max-content' }}
+        pagination={{ pageSize: 10, showSizeChanger: false }}
+        locale={{ emptyText: 'No hay usuarios que coincidan.' }}
+      />
     </section>
   );
 }

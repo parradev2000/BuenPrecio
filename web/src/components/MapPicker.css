@@ -1,0 +1,10 @@
+.map-pin {
+  display: flex;
+  width: 28px;
+  height: 28px;
+}
+
+.map-pin svg {
+  width: 100%;
+  height: 100%;
+}

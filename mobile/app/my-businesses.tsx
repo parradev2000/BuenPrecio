@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { api } from '../src/api/client';
 import type { Business, Category } from '../src/api/types';
-import { Alert, Button, EmptyState, Loading, Screen, TextField } from '../src/components/ui';
+import { Alert, Button, Card, EmptyState, Loading, Screen, TextField } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
-import { COLORS } from '../src/lib/format';
 
 export default function MyBusinessesScreen() {
   const router = useRouter();
@@ -166,6 +165,11 @@ export default function MyBusinessesScreen() {
     await load();
   }
 
+  const chipOptions = [
+    { id: '', label: 'Sin tipo de negocio' },
+    ...categories.map((c) => ({ id: c.id, label: c.name })),
+  ];
+
   return (
     <Screen>
       {error && <Alert kind="error">{error}</Alert>}
@@ -176,41 +180,46 @@ export default function MyBusinessesScreen() {
       />
 
       {showForm && (
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>{editing ? 'Editar negocio' : 'Nuevo negocio'}</Text>
+        <Card className="mt-3">
+          <Text className="text-base font-bold text-ink">
+            {editing ? 'Editar negocio' : 'Nuevo negocio'}
+          </Text>
           <TextField label="Nombre *" value={name} onChangeText={setName} />
           <TextField label="Dirección" value={address} onChangeText={setAddress} />
           <Button title="Usar mi ubicación (GPS)" variant="secondary" onPress={() => void locateMe()} />
           {(coords.latitude !== undefined || coords.longitude !== undefined) && (
-            <Text style={styles.muted}>
+            <Text className="text-sm text-muted">
               Ubicación fijada ({coords.latitude?.toFixed(4)}, {coords.longitude?.toFixed(4)})
             </Text>
           )}
-          <Text style={styles.label}>Tipo de negocio</Text>
-          <View style={styles.chips}>
+          <Text className="mt-1 text-[13px] font-semibold text-muted">Tipo de negocio</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {chipOptions.map((option) => {
+              const active = categoryId === option.id;
+              return (
+                <Pressable
+                  key={option.id || 'none'}
+                  className={`rounded-full border px-2.5 py-1.5 active:opacity-70 ${
+                    active ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+                  }`}
+                  onPress={() => setCategoryId(option.id)}
+                >
+                  <Text className={`text-[13px] ${active ? 'text-white' : 'text-muted'}`}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
             <Pressable
-              style={[styles.chip, categoryId === '' && styles.chipActive]}
-              onPress={() => setCategoryId('')}
-            >
-              <Text style={[styles.chipText, categoryId === '' && styles.chipTextActive]}>Sin tipo de negocio</Text>
-            </Pressable>
-            {categories.map((c) => (
-              <Pressable
-                key={c.id}
-                style={[styles.chip, categoryId === c.id && styles.chipActive]}
-                onPress={() => setCategoryId(c.id)}
-              >
-                <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>{c.name}</Text>
-              </Pressable>
-            ))}
-            <Pressable
-              style={[styles.chip, showNewCat && styles.chipActive]}
+              className={`rounded-full border px-2.5 py-1.5 active:opacity-70 ${
+                showNewCat ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+              }`}
               onPress={() => {
                 setShowNewCat((v) => !v);
                 setNewCatName('');
               }}
             >
-              <Text style={[styles.chipText, showNewCat && styles.chipTextActive]}>+ Nueva</Text>
+              <Text className={`text-[13px] ${showNewCat ? 'text-white' : 'text-muted'}`}>+ Nueva</Text>
             </Pressable>
           </View>
           {showNewCat && (
@@ -234,7 +243,7 @@ export default function MyBusinessesScreen() {
             onPress={() => void saveBusiness()}
             disabled={busy || !name.trim()}
           />
-        </View>
+        </Card>
       )}
 
       {loading ? (
@@ -247,26 +256,47 @@ export default function MyBusinessesScreen() {
           keyExtractor={(b) => b.id}
           contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardTop}>
-                <Text style={styles.title}>{item.name}</Text>
-                <Text style={item.active ? styles.chipOn : styles.chipOff}>
-                  {item.active ? 'activo' : 'inactivo'}
-                </Text>
+            <View className="mb-2.5 gap-1 rounded-2xl border border-edge bg-white p-3.5">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-[17px] font-bold text-ink">{item.name}</Text>
+                <View
+                  className={`rounded-full px-2.5 py-0.5 ${
+                    item.active ? 'bg-brand-50' : 'bg-red-50'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-semibold ${
+                      item.active ? 'text-brand-700' : 'text-red-700'
+                    }`}
+                  >
+                    {item.active ? 'activo' : 'inactivo'}
+                  </Text>
+                </View>
               </View>
-              {item.address ? <Text style={styles.muted}>{item.address}</Text> : null}
-              <Text style={styles.muted}>
+              {item.address ? <Text className="text-muted">{item.address}</Text> : null}
+              <Text className="text-muted">
                 {item.itemsCount ?? 0} producto{item.itemsCount === 1 ? '' : 's'}
               </Text>
-              <View style={styles.rowActions}>
-                <Pressable style={styles.smallBtn} onPress={() => router.push(`/my-businesses/${item.id}`)}>
-                  <Text style={styles.smallBtnText}>Gestionar</Text>
+              <View className="mt-2 flex-row flex-wrap gap-2">
+                <Pressable
+                  className="rounded-lg bg-brand-600 px-3 py-2 active:opacity-70"
+                  onPress={() => router.push(`/my-businesses/${item.id}`)}
+                >
+                  <Text className="font-semibold text-white">Gestionar</Text>
                 </Pressable>
-                <Pressable style={[styles.smallBtn, styles.smallBtnGhost]} onPress={() => startEdit(item)}>
-                  <Text style={styles.smallBtnGhostText}>Editar</Text>
+                <Pressable
+                  className="rounded-lg px-3 py-2 active:opacity-70"
+                  onPress={() => startEdit(item)}
+                >
+                  <Text className="font-semibold text-muted">Editar</Text>
                 </Pressable>
-                <Pressable style={[styles.smallBtn, styles.smallBtnGhost]} onPress={() => void toggleActive(item)}>
-                  <Text style={styles.smallBtnGhostText}>{item.active ? 'Desactivar' : 'Activar'}</Text>
+                <Pressable
+                  className="rounded-lg px-3 py-2 active:opacity-70"
+                  onPress={() => void toggleActive(item)}
+                >
+                  <Text className="font-semibold text-muted">
+                    {item.active ? 'Desactivar' : 'Activar'}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -276,101 +306,3 @@ export default function MyBusinessesScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  form: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 12,
-    gap: 8,
-  },
-  formTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.muted,
-    marginTop: 4,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-  },
-  chipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  chipText: {
-    color: COLORS.muted,
-    fontSize: 13,
-  },
-  chipTextActive: {
-    color: '#fff',
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    gap: 4,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  muted: {
-    color: COLORS.muted,
-  },
-  chipOn: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  chipOff: {
-    color: COLORS.dangerDark,
-    fontWeight: '600',
-  },
-  rowActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  smallBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  smallBtnText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  smallBtnGhost: {
-    backgroundColor: 'transparent',
-  },
-  smallBtnGhostText: {
-    color: COLORS.muted,
-    fontWeight: '600',
-  },
-});
