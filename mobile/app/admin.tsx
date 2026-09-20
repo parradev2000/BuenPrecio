@@ -929,6 +929,30 @@ function BusinessesTab() {
     }
   }
 
+  async function doRemove(b: AdminBusiness) {
+    setBusyId(b.id);
+    setError(null);
+    try {
+      await api(`/admin/businesses/${b.id}`, { method: 'DELETE', auth: true });
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function remove(b: AdminBusiness) {
+    NativeAlert.alert(
+      'Eliminar negocio',
+      `¿Eliminar "${b.name}"? Se borrarán también sus productos y servicios. Esta acción no se puede deshacer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => void doRemove(b) },
+      ],
+    );
+  }
+
   return (
     <View className="flex-1">
       {error && <Alert kind="error">{error}</Alert>}
@@ -959,12 +983,24 @@ function BusinessesTab() {
               <Text className="text-muted">
                 {item.itemsCount} producto{item.itemsCount === 1 ? '' : 's'}
               </Text>
-              <Button
-                title={item.active ? 'Desactivar' : 'Activar'}
-                variant={item.active ? 'secondary' : 'primary'}
-                disabled={busyId === item.id}
-                onPress={() => void toggle(item)}
-              />
+              <View className="mt-2 flex-row gap-2">
+                <View className="flex-1">
+                  <Button
+                    title={item.active ? 'Desactivar' : 'Activar'}
+                    variant={item.active ? 'secondary' : 'primary'}
+                    disabled={busyId === item.id}
+                    onPress={() => void toggle(item)}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Button
+                    title="Eliminar"
+                    variant="danger"
+                    disabled={busyId === item.id}
+                    onPress={() => void remove(item)}
+                  />
+                </View>
+              </View>
             </View>
           )}
         />

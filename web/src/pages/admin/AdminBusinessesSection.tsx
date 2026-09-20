@@ -60,6 +60,28 @@ export function AdminBusinessesSection() {
     });
   }
 
+  async function doRemove(business: AdminBusiness) {
+    setError(null);
+    try {
+      await api(`/admin/businesses/${business.id}`, { method: 'DELETE', auth: true });
+      message.success('Negocio eliminado');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar');
+    }
+  }
+
+  function remove(business: AdminBusiness) {
+    modal.confirm({
+      title: 'Eliminar negocio',
+      content: `¿Eliminar "${business.name}" de ${business.ownerName}? Se borrarán también sus productos y servicios. Esta acción no se puede deshacer.`,
+      okText: 'Eliminar',
+      okButtonProps: { danger: true },
+      cancelText: 'Cancelar',
+      onOk: () => doRemove(business),
+    });
+  }
+
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
     return items.filter((b) => {
@@ -109,9 +131,14 @@ export function AdminBusinessesSection() {
       title: 'Acciones',
       key: 'actions',
       render: (_, b) => (
-        <Button size="small" type="text" onClick={() => toggle(b)}>
-          {b.active ? 'Desactivar' : 'Activar'}
-        </Button>
+        <span className="flex items-center gap-1">
+          <Button size="small" type="text" onClick={() => toggle(b)}>
+            {b.active ? 'Desactivar' : 'Activar'}
+          </Button>
+          <Button size="small" type="text" danger onClick={() => remove(b)}>
+            Eliminar
+          </Button>
+        </span>
       ),
     },
   ];

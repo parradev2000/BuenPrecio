@@ -183,6 +183,20 @@ export async function adminRoutes(app: FastifyInstance) {
     return { items, total: items.length };
   });
 
+  app.delete('/admin/businesses/:id', adminOnly, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return sendError(reply, 404, 'Negocio no encontrado');
+    }
+    const target = await db.query.businesses.findFirst({ where: eq(businesses.id, id) });
+    if (!target) {
+      return sendError(reply, 404, 'Negocio no encontrado');
+    }
+    // Ítems y reportes de precio se borran en cascada.
+    await db.delete(businesses).where(eq(businesses.id, target.id));
+    return reply.code(204).send();
+  });
+
   app.get('/admin/applications', adminOnly, async (request) => {
     const { status } = request.query as { status?: string };
     const filter =

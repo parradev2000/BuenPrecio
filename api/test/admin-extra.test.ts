@@ -195,6 +195,75 @@ describe('negocios (vista admin)', () => {
     expect(res.json().items[0].ownerEmail).toBe('luis@ejemplo.com');
     expect(res.json().items[0].itemsCount).toBe(1);
   });
+
+  it('elimina un negocio junto con sus ítems', async () => {
+    const admin = await createAdmin();
+    const [owner] = await db
+      .insert(users)
+      .values({ name: 'Luis', email: 'luis@ejemplo.com', passwordHash: 'x', role: 'productor' })
+      .returning();
+    const [business] = await db
+      .insert(businesses)
+      .values({ name: 'Negocio A', ownerId: owner.id })
+      .returning();
+    await db
+      .insert(businessItems)
+      .values({ businessId: business.id, type: 'producto', name: 'Pan', price: 50 });
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `${BASE}/admin/businesses/${business.id}`,
+      headers: auth(admin.accessToken),
+    });
+    expect(res.statusCode).toBe(204);
+
+    expect(await db.select().from(businesses)).toHaveLength(0);
+    expect(await db.select().from(businessItems)).toHaveLength(0);
+
+    const listed = await app.inject({
+      method: 'GET',
+      url: `${BASE}/admin/businesses`,
+      headers: auth(admin.accessToken),
+    });
+    expect(listed.json().total).toBe(0);
+  });
+
+  it('no elimina negocios sin sesión de admin', async () => {
+    const [owner] = await db
+      .insert(users)
+      .values({ name: 'Luis', email: 'luis@ejemplo.com', passwordHash: 'x', role: 'productor' })
+      .returning();
+    const [business] = await db
+      .insert(businesses)
+      .values({ name: 'Negocio A', ownerId: owner.id })
+      .returning();
+
+    const anonymous = await app.inject({
+      method: 'DELETE',
+      url: `${BASE}/admin/businesses/${business.id}`,
+    });
+    expect(anonymous.statusCode).toBe(401);
+
+    const consumer = await register('Ana', 'ana@ejemplo.com');
+    const forbidden = await app.inject({
+      method: 'DELETE',
+      url: `${BASE}/admin/businesses/${business.id}`,
+      headers: auth(consumer.accessToken),
+    });
+    expect(forbidden.statusCode).toBe(403);
+
+    expect(await db.select().from(businesses)).toHaveLength(1);
+  });
+
+  it('devuelve 404 al eliminar un negocio inexistente', async () => {
+    const admin = await createAdmin();
+    const missing = await app.inject({
+      method: 'DELETE',
+      url: `${BASE}/admin/businesses/00000000-0000-0000-0000-000000000000`,
+      headers: auth(admin.accessToken),
+    });
+    expect(missing.statusCode).toBe(404);
+  });
 });
 
 describe('categorías', () => {
