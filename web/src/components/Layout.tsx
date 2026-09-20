@@ -19,7 +19,7 @@ export function Layout() {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const navItems: MenuProps['items'] = [];
+  const navItems: MenuProps['items'] = [{ key: '/', label: 'Inicio' }];
   if (session?.user.role === 'administrador') {
     navItems.push({ key: '/dashboard', label: 'Dashboard' });
   }
