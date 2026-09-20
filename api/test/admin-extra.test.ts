@@ -313,6 +313,74 @@ describe('categorías', () => {
     expect(inUse.statusCode).toBe(409);
   });
 
+  it('el admin puede editar el nombre y el tipo de una categoría', async () => {
+    const admin = await createAdmin();
+    const create = await app.inject({
+      method: 'POST',
+      url: `${BASE}/categories`,
+      headers: auth(admin.accessToken),
+      payload: { name: 'Café', kind: 'negocio' },
+    });
+    const id = create.json().category.id;
+
+    const renamed = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/categories/${id}`,
+      headers: auth(admin.accessToken),
+      payload: { name: 'Cafetería' },
+    });
+    expect(renamed.statusCode).toBe(200);
+    expect(renamed.json().category).toMatchObject({ name: 'Cafetería', kind: 'negocio' });
+
+    const moved = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/categories/${id}`,
+      headers: auth(admin.accessToken),
+      payload: { kind: 'item' },
+    });
+    expect(moved.statusCode).toBe(200);
+    expect(moved.json().category.kind).toBe('item');
+  });
+
+  it('solo el admin puede editar categorías', async () => {
+    const consumer = await register('Ana', 'ana@ejemplo.com');
+    const [cat] = await db.insert(categories).values({ name: 'Café', kind: 'negocio' }).returning();
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/categories/${cat.id}`,
+      headers: auth(consumer.accessToken),
+      payload: { name: 'Otra' },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('no deja editar a un nombre existente ni cambiar de tipo si está en uso', async () => {
+    const admin = await createAdmin();
+    await db.insert(categories).values({ name: 'Café', kind: 'negocio' });
+    const [target] = await db.insert(categories).values({ name: 'Frutas', kind: 'negocio' }).returning();
+
+    const dup = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/categories/${target.id}`,
+      headers: auth(admin.accessToken),
+      payload: { name: 'Café' },
+    });
+    expect(dup.statusCode).toBe(409);
+
+    const [owner] = await db
+      .insert(users)
+      .values({ name: 'Luis', email: 'luis@ejemplo.com', passwordHash: 'x', role: 'productor' })
+      .returning();
+    await db.insert(businesses).values({ name: 'Cafetería', ownerId: owner.id, categoryId: target.id });
+    const changeKind = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/categories/${target.id}`,
+      headers: auth(admin.accessToken),
+      payload: { kind: 'item' },
+    });
+    expect(changeKind.statusCode).toBe(409);
+  });
+
   it('devuelve estadísticas generales solo a admin', async () => {
     const consumer = await register('Ana', 'ana@ejemplo.com');
     const forbidden = await app.inject({

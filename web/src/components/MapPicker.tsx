@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { App, Button } from 'antd';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import './MapPicker.css';
 import { getCurrentPosition, reverseGeocode } from '../lib/geo';
 
 export type MapPick = { address: string; latitude: number; longitude: number };
@@ -17,6 +19,7 @@ const ICON = L.divIcon({
 });
 
 export function MapPicker({ onPick }: MapPickerProps) {
+  const { message } = App.useApp();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -70,16 +73,21 @@ export function MapPicker({ onPick }: MapPickerProps) {
       const address = (await reverseGeocode(pos.latitude, pos.longitude)) ?? '';
       onPickRef.current({ ...pos, address });
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'No se pudo obtener la ubicación');
+      message.error(e instanceof Error ? e.message : 'No se pudo obtener la ubicación');
     }
   }
 
   return (
-    <div className="map-picker">
-      <div ref={containerRef} className="map-picker-canvas" />
-      <button type="button" className="btn btn-secondary btn-sm" onClick={() => void locateMe()}>
-        Usar mi ubicación
-      </button>
+    <div className="flex flex-col gap-2">
+      <div
+        ref={containerRef}
+        className="h-56 w-full overflow-hidden rounded-xl border border-slate-200 sm:h-72"
+      />
+      <div>
+        <Button size="small" onClick={() => void locateMe()}>
+          Usar mi ubicación
+        </Button>
+      </div>
     </div>
   );
 }

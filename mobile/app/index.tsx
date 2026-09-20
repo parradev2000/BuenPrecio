@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../src/api/client';
 import type { CatalogBusiness, CatalogProduct, Category, ProductCategory } from '../src/api/types';
@@ -18,33 +18,88 @@ export default function CatalogScreen() {
   return (
     <Screen>
       {session?.user.role === 'administrador' && (
-        <Pressable style={styles.producerBtn} onPress={() => router.push('/admin')}>
-          <Text style={styles.producerBtnText}>Dashboard</Text>
+        <Pressable
+          className="mb-2.5 items-center rounded-xl bg-brand-600 py-3 active:opacity-70"
+          onPress={() => router.push('/admin')}
+        >
+          <Text className="text-[15px] font-bold text-white">Dashboard</Text>
         </Pressable>
       )}
       {session?.user.role === 'productor' && (
-        <Pressable style={styles.producerBtn} onPress={() => router.push('/my-businesses')}>
-          <Text style={styles.producerBtnText}>Gestionar mis negocios</Text>
+        <Pressable
+          className="mb-2.5 items-center rounded-xl bg-brand-600 py-3 active:opacity-70"
+          onPress={() => router.push('/my-businesses')}
+        >
+          <Text className="text-[15px] font-bold text-white">Gestionar mis negocios</Text>
         </Pressable>
       )}
 
-      <View style={styles.tabs}>
+      <View className="mb-3 flex-row gap-2">
         <Pressable
-          style={[styles.tabBtn, view === 'productos' && styles.tabBtnActive]}
+          className={`flex-1 items-center rounded-xl border py-2.5 active:opacity-70 ${
+            view === 'productos' ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+          }`}
           onPress={() => setView('productos')}
         >
-          <Text style={[styles.tabText, view === 'productos' && styles.tabTextActive]}>Productos</Text>
+          <Text className={`text-[15px] font-bold ${view === 'productos' ? 'text-white' : 'text-muted'}`}>
+            Productos
+          </Text>
         </Pressable>
         <Pressable
-          style={[styles.tabBtn, view === 'negocios' && styles.tabBtnActive]}
+          className={`flex-1 items-center rounded-xl border py-2.5 active:opacity-70 ${
+            view === 'negocios' ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+          }`}
           onPress={() => setView('negocios')}
         >
-          <Text style={[styles.tabText, view === 'negocios' && styles.tabTextActive]}>Negocios</Text>
+          <Text className={`text-[15px] font-bold ${view === 'negocios' ? 'text-white' : 'text-muted'}`}>
+            Negocios
+          </Text>
         </Pressable>
       </View>
 
       {view === 'productos' ? <ProductsCatalog /> : <BusinessesCatalog />}
     </Screen>
+  );
+}
+
+function CategoryChips({
+  categories,
+  categoryId,
+  onSelect,
+}: {
+  categories: { id: string; name: string }[];
+  categoryId: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <View className="flex-row flex-wrap gap-2">
+      <Pressable
+        className={`rounded-full border px-3 py-1.5 active:opacity-70 ${
+          categoryId === '' ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+        }`}
+        onPress={() => onSelect('')}
+      >
+        <Text className={`text-[13px] font-semibold ${categoryId === '' ? 'text-white' : 'text-muted'}`}>
+          Todas
+        </Text>
+      </Pressable>
+      {categories.map((c) => {
+        const active = categoryId === c.id;
+        return (
+          <Pressable
+            key={c.id}
+            className={`rounded-full border px-3 py-1.5 active:opacity-70 ${
+              active ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+            }`}
+            onPress={() => onSelect(c.id)}
+          >
+            <Text className={`text-[13px] font-semibold ${active ? 'text-white' : 'text-muted'}`}>
+              {c.name}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -87,31 +142,15 @@ function ProductsCatalog() {
 
   return (
     <>
-      <View style={styles.filters}>
+      <View className="mb-2.5 gap-2.5">
         <TextInput
-          style={styles.search}
+          className="rounded-xl border border-edge bg-white px-3 py-2.5 text-base text-ink"
           placeholder="Producto…"
           placeholderTextColor={COLORS.muted}
           value={search}
           onChangeText={setSearch}
         />
-        <View style={styles.chips}>
-          <Pressable
-            style={[styles.chip, categoryId === '' && styles.chipActive]}
-            onPress={() => setCategoryId('')}
-          >
-            <Text style={[styles.chipText, categoryId === '' && styles.chipTextActive]}>Todas</Text>
-          </Pressable>
-          {categories.map((c) => (
-            <Pressable
-              key={c.id}
-              style={[styles.chip, categoryId === c.id && styles.chipActive]}
-              onPress={() => setCategoryId(c.id)}
-            >
-              <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>{c.name}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <CategoryChips categories={categories} categoryId={categoryId} onSelect={setCategoryId} />
       </View>
 
       <LocationControl status={status} error={error} onEnable={() => void enable()} onDisable={disable} />
@@ -122,7 +161,7 @@ function ProductsCatalog() {
         <EmptyState message={search || categoryId ? 'No hay productos que coincidan con tu búsqueda.' : 'Aún no hay productos publicados.'} />
       ) : (
         <>
-          <Text style={styles.resultCount}>
+          <Text className="mb-2 text-[13px] text-muted">
             {items.length} {items.length === 1 ? 'producto' : 'productos'}
             {status === 'enabled' && ' · ordenados por cercanía'}
           </Text>
@@ -131,29 +170,42 @@ function ProductsCatalog() {
             keyExtractor={(p) => p.id}
             contentContainerStyle={{ paddingBottom: 24 }}
             renderItem={({ item }) => (
-              <Pressable style={styles.card} onPress={() => router.push(`/product/${item.id}`)}>
-                <View style={styles.cardTop}>
-                  <Text style={styles.chipText}>{item.categoryName ?? 'General'}</Text>
+              <Pressable
+                className="mb-2.5 gap-1.5 rounded-2xl border border-edge bg-white p-3.5 active:opacity-90"
+                onPress={() => router.push(`/product/${item.id}`)}
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="rounded-full bg-brand-50 px-2.5 py-0.5">
+                    <Text className="text-xs font-semibold text-brand-700">
+                      {item.categoryName ?? 'General'}
+                    </Text>
+                  </View>
                   {item.distanceKm != null && (
-                    <Text style={styles.distance}>{`a ${formatDistance(item.distanceKm)}`}</Text>
+                    <Text className="text-xs text-muted">{`a ${formatDistance(item.distanceKm)}`}</Text>
                   )}
                 </View>
-                <View style={styles.productBody}>
+                <View className="flex-row items-center gap-2.5">
                   {item.photoUrl ? (
-                    <Image source={{ uri: mediaUrl(item.photoUrl) ?? '' }} style={styles.productThumb} />
+                    <Image
+                      source={{ uri: mediaUrl(item.photoUrl) ?? '' }}
+                      className="rounded-lg"
+                      style={{ width: 56, height: 56 }}
+                    />
                   ) : null}
-                  <View style={styles.productInfo}>
-                    <Text style={styles.cardTitle}>{item.name}</Text>
-                    <Text style={styles.price}>
+                  <View className="flex-1 gap-0.5">
+                    <Text className="text-base font-bold text-ink">{item.name}</Text>
+                    <Text className="text-[15px] font-bold text-brand-700">
                       {formatPrice(item.price)}
                       {item.unit ? ` / ${item.unit}` : ''}
                     </Text>
-                    <Text style={styles.muted} numberOfLines={1}>
+                    <Text className="text-muted" numberOfLines={1}>
                       {item.businessName}
                     </Text>
                   </View>
                 </View>
-                {item.businessAddress ? <Text style={styles.muted}>📍 {item.businessAddress}</Text> : null}
+                {item.businessAddress ? (
+                  <Text className="text-muted">📍 {item.businessAddress}</Text>
+                ) : null}
               </Pressable>
             )}
           />
@@ -196,31 +248,15 @@ function BusinessesCatalog() {
 
   return (
     <>
-      <View style={styles.filters}>
+      <View className="mb-2.5 gap-2.5">
         <TextInput
-          style={styles.search}
+          className="rounded-xl border border-edge bg-white px-3 py-2.5 text-base text-ink"
           placeholder="Buscar negocio…"
           placeholderTextColor={COLORS.muted}
           value={search}
           onChangeText={setSearch}
         />
-        <View style={styles.chips}>
-          <Pressable
-            style={[styles.chip, categoryId === '' && styles.chipActive]}
-            onPress={() => setCategoryId('')}
-          >
-            <Text style={[styles.chipText, categoryId === '' && styles.chipTextActive]}>Todas</Text>
-          </Pressable>
-          {categories.map((c) => (
-            <Pressable
-              key={c.id}
-              style={[styles.chip, categoryId === c.id && styles.chipActive]}
-              onPress={() => setCategoryId(c.id)}
-            >
-              <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>{c.name}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <CategoryChips categories={categories} categoryId={categoryId} onSelect={setCategoryId} />
       </View>
 
       {loading ? (
@@ -233,15 +269,22 @@ function BusinessesCatalog() {
           keyExtractor={(b) => b.id}
           contentContainerStyle={{ paddingBottom: 24 }}
           renderItem={({ item }) => (
-            <Pressable style={styles.card} onPress={() => router.push(`/business/${item.id}`)}>
-              <View style={styles.cardTop}>
-                <Text style={styles.chipText}>{item.categoryName ?? 'General'}</Text>
-                <Text style={styles.muted}>
+            <Pressable
+              className="mb-2.5 gap-1.5 rounded-2xl border border-edge bg-white p-3.5 active:opacity-90"
+              onPress={() => router.push(`/business/${item.id}`)}
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="rounded-full bg-brand-50 px-2.5 py-0.5">
+                  <Text className="text-xs font-semibold text-brand-700">
+                    {item.categoryName ?? 'General'}
+                  </Text>
+                </View>
+                <Text className="text-muted">
                   {item.itemsCount} producto{item.itemsCount === 1 ? '' : 's'}
                 </Text>
               </View>
-              <Text style={styles.cardTitle}>{item.name}</Text>
-              {item.address ? <Text style={styles.muted}>{item.address}</Text> : null}
+              <Text className="text-base font-bold text-ink">{item.name}</Text>
+              {item.address ? <Text className="text-muted">{item.address}</Text> : null}
             </Pressable>
           )}
         />
@@ -262,187 +305,28 @@ function LocationControl({
   onDisable: () => void;
 }) {
   return (
-    <View style={styles.locCard}>
+    <View className="mb-3 gap-2 rounded-xl border border-dashed border-brand-600 bg-white p-3">
       {status === 'idle' && (
         <>
-          <Text style={styles.muted}>Activa tu ubicación para ver primero lo más cercano a ti.</Text>
-          <Pressable style={styles.locBtn} onPress={onEnable}>
-            <Text style={styles.locBtnText}>Activar ubicación</Text>
+          <Text className="text-muted">Activa tu ubicación para ver primero lo más cercano a ti.</Text>
+          <Pressable
+            className="items-center rounded-xl bg-brand-600 py-2.5 active:opacity-70"
+            onPress={onEnable}
+          >
+            <Text className="text-sm font-bold text-white">Activar ubicación</Text>
           </Pressable>
         </>
       )}
-      {status === 'asking' && <Text style={styles.muted}>Obteniendo tu ubicación…</Text>}
+      {status === 'asking' && <Text className="text-muted">Obteniendo tu ubicación…</Text>}
       {status === 'enabled' && (
         <>
-          <Text style={styles.locNote}>📍 Ordenando por cercanía a tu ubicación.</Text>
+          <Text className="text-[13px] text-muted">📍 Ordenando por cercanía a tu ubicación.</Text>
           <Pressable onPress={onDisable}>
-            <Text style={styles.locLink}>Quitar ubicación</Text>
+            <Text className="text-[13px] font-bold text-brand-700">Quitar ubicación</Text>
           </Pressable>
         </>
       )}
-      {error ? <Text style={styles.locError}>{error}</Text> : null}
+      {error ? <Text className="text-[13px] text-red-600">{error}</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  producerBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  producerBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  tabs: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  tabBtn: {
-    flex: 1,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingVertical: 9,
-    alignItems: 'center',
-  },
-  tabBtnActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  tabText: {
-    color: COLORS.muted,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  tabTextActive: {
-    color: '#fff',
-  },
-  filters: {
-    marginBottom: 10,
-    gap: 10,
-  },
-  search: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  locCard: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    borderStyle: 'dashed',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    gap: 8,
-  },
-  locBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  locBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  locNote: {
-    color: COLORS.muted,
-    fontSize: 13,
-  },
-  locLink: {
-    color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  locError: {
-    color: COLORS.dangerDark,
-    fontSize: 13,
-  },
-  resultCount: {
-    color: COLORS.muted,
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  chipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  chipText: {
-    color: COLORS.muted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  chipTextActive: {
-    color: '#fff',
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    gap: 6,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  productBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  productThumb: {
-    width: 56,
-    height: 56,
-    borderRadius: 8,
-  },
-  productInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  price: {
-    fontWeight: '700',
-    color: COLORS.primary,
-    fontSize: 15,
-  },
-  distance: {
-    color: COLORS.muted,
-    fontSize: 12,
-  },
-  muted: {
-    color: COLORS.muted,
-  },
-});

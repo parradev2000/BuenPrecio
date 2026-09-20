@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { Badge, Tabs } from 'antd';
 import { api } from '../api/client';
 import type { AdminApplicationRow } from '../api/types';
 import { AdminBusinessesSection } from './admin/AdminBusinessesSection';
@@ -44,27 +45,30 @@ export function AdminPage() {
   };
 
   return (
-    <div className="page">
-      <div className="admin-head">
-        <div>
-          <h1>Administración</h1>
-          <p className="admin-sub">Usuarios, negocios, categorías y solicitudes de productores.</p>
-        </div>
-      </div>
-      <div className="tabs admin-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            className={`chip tab${tab === t.key ? ' tab-active' : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-            {t.key === 'aplicaciones' && pendingCount > 0 && <span className="tab-count">{pendingCount}</span>}
-          </button>
-        ))}
-      </div>
-      <div className="admin-main">{content[tab]}</div>
+    <div>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Administración</h1>
+      <p className="mt-1 text-sm text-slate-500">
+        Usuarios, negocios, categorías y solicitudes de productores.
+      </p>
+
+      <Tabs
+        className="mt-4"
+        activeKey={tab}
+        onChange={(key) => setTab(key as TabKey)}
+        items={TABS.map((t) => ({
+          key: t.key,
+          label: (
+            <span className="inline-flex items-center gap-2">
+              {t.label}
+              {t.key === 'aplicaciones' && pendingCount > 0 && (
+                <Badge count={pendingCount} size="small" color="#059669" />
+              )}
+            </span>
+          ),
+        }))}
+      />
+
+      <div className="mt-2">{content[tab]}</div>
     </div>
   );
 }

@@ -1,13 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Button, Input, Segmented, Select } from 'antd';
+import { EnvironmentOutlined, SearchOutlined } from '@ant-design/icons';
 import { api } from '../api/client';
 import type { CatalogBusiness, CatalogProduct, Category, ProductCategory } from '../api/types';
-import { EmptyState, Field, Loading } from '../components/ui';
+import { EmptyState, Loading } from '../components/ui';
 import { useSeo } from '../hooks/useSeo';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { formatDistance, formatPrice } from '../lib/format';
 
 type CatalogView = 'productos' | 'negocios';
+
+function CategorySelect({
+  value,
+  onChange,
+  placeholder,
+  options,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-slate-600">{placeholder}</span>
+      <Select
+        allowClear
+        value={value || undefined}
+        onChange={(v) => onChange(v ?? '')}
+        options={options}
+        placeholder="Todas"
+        className="w-full"
+      />
+    </label>
+  );
+}
 
 export function CatalogPage() {
   useSeo({
@@ -18,27 +46,19 @@ export function CatalogPage() {
   const [view, setView] = useState<CatalogView>('productos');
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1>Catálogo</h1>
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Catálogo</h1>
+        <Segmented
+          value={view}
+          onChange={(value) => setView(value as CatalogView)}
+          options={[
+            { label: 'Productos', value: 'productos' },
+            { label: 'Negocios', value: 'negocios' },
+          ]}
+        />
       </div>
-      <div className="tabs">
-        <button
-          type="button"
-          className={view === 'productos' ? 'tab tab-active' : 'tab'}
-          onClick={() => setView('productos')}
-        >
-          Productos
-        </button>
-        <button
-          type="button"
-          className={view === 'negocios' ? 'tab tab-active' : 'tab'}
-          onClick={() => setView('negocios')}
-        >
-          Negocios
-        </button>
-      </div>
-      {view === 'productos' ? <ProductsCatalog /> : <BusinessesCatalog />}
+      <div className="mt-6">{view === 'productos' ? <ProductsCatalog /> : <BusinessesCatalog />}</div>
     </div>
   );
 }
@@ -93,53 +113,54 @@ function ProductsCatalog() {
 
   return (
     <>
-      <div className="filters">
-        <Field
-          label="Producto"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Nombre del producto…"
-        />
-        <label className="field">
-          <span className="field-label">Categoría</span>
-          <select className="field-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">Todas</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-slate-600">Producto</span>
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Nombre del producto…"
+            prefix={<SearchOutlined className="text-slate-400" />}
+            allowClear
+          />
         </label>
+        <CategorySelect
+          placeholder="Categoría"
+          value={categoryId}
+          onChange={setCategoryId}
+          options={categories.map((c) => ({ value: c.id, label: c.name }))}
+        />
       </div>
 
       {status === 'idle' && (
-        <div className="loc-banner">
+        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-900 sm:flex-row sm:items-center sm:justify-between">
           <span>Activa tu ubicación para ver primero los productos más cercanos a ti.</span>
-          <button type="button" className="btn btn-primary btn-sm" onClick={enable}>
+          <Button type="primary" size="small" onClick={enable}>
             Activar ubicación
-          </button>
+          </Button>
         </div>
       )}
       {status === 'asking' && (
-        <div className="loc-banner">
-          <span>Obteniendo tu ubicación…</span>
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+          Obteniendo tu ubicación…
         </div>
       )}
       {status === 'enabled' && (
-        <div className="loc-banner">
-          <span className="loc-note">📍 Ordenando por cercanía a tu ubicación.</span>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={disable}>
+        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+          <span className="inline-flex items-center gap-1.5">
+            <EnvironmentOutlined className="text-brand-600" />
+            Ordenando por cercanía a tu ubicación.
+          </span>
+          <Button type="text" size="small" onClick={disable}>
             Quitar ubicación
-          </button>
+          </Button>
         </div>
       )}
-      {locationError && <p className="alert alert-error">{locationError}</p>}
-
-      {error && <p className="alert alert-error">{error}</p>}
+      {locationError && <p className="mt-3 text-sm text-red-600">{locationError}</p>}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (products.length > 0 || search || categoryId) && (
-        <p className="result-count">
+        <p className="mt-4 text-sm text-slate-500">
           {products.length} {products.length === 1 ? 'producto' : 'productos'}
           {status === 'enabled' && ' · ordenados por cercanía'}
         </p>
@@ -147,39 +168,63 @@ function ProductsCatalog() {
 
       {loading && products.length === 0 && <Loading />}
       {!loading && products.length === 0 && !error && (
-        <EmptyState message={search || categoryId ? 'No hay productos que coincidan con tu búsqueda.' : 'Aún no hay productos publicados.'} />
+        <EmptyState
+          message={
+            search || categoryId
+              ? 'No hay productos que coincidan con tu búsqueda.'
+              : 'Aún no hay productos publicados.'
+          }
+        />
       )}
       {!loading && products.length > 0 && (
         <>
-          <div className="grid">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((p) => (
-              <Link key={p.id} to={`/productos/${p.id}`} className="grid-item">
+              <Link
+                key={p.id}
+                to={`/productos/${p.id}`}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+              >
                 {p.photoUrl && (
-                  <div className="grid-item-photo">
-                    <img src={p.photoUrl} alt="" loading="lazy" decoding="async" />
+                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
+                    <img
+                      src={p.photoUrl}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
                   </div>
                 )}
-                <div className="grid-item-top">
-                  <span className="chip">{p.categoryName ?? 'General'}</span>
-                  {p.distanceKm != null && (
-                    <span className="distance-badge">a {formatDistance(p.distanceKm)}</span>
+                <div className="flex flex-1 flex-col gap-2 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+                      {p.categoryName ?? 'General'}
+                    </span>
+                    {p.distanceKm != null && (
+                      <span className="text-xs text-slate-500">a {formatDistance(p.distanceKm)}</span>
+                    )}
+                  </div>
+                  <h2 className="text-base font-semibold text-slate-900">{p.name}</h2>
+                  <p className="text-lg font-bold text-brand-700">
+                    {formatPrice(p.price)}
+                    {p.unit && <span className="text-sm font-normal text-slate-500"> / {p.unit}</span>}
+                  </p>
+                  <p className="mt-auto text-sm text-slate-500">{p.businessName}</p>
+                  {p.businessAddress && (
+                    <p className="inline-flex items-center gap-1 text-xs text-slate-400">
+                      <EnvironmentOutlined /> {p.businessAddress}
+                    </p>
                   )}
                 </div>
-                <h2>{p.name}</h2>
-                <p className="price">
-                  {formatPrice(p.price)}
-                  {p.unit && ` / ${p.unit}`}
-                </p>
-                <p className="muted">{p.businessName}</p>
-                {p.businessAddress && <p className="muted">📍 {p.businessAddress}</p>}
               </Link>
             ))}
           </div>
           {(search || categoryId) && (
-            <div className="empty-action">
-              <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
+            <div className="mt-4">
+              <Button type="text" onClick={clearFilters}>
                 Limpiar filtros
-              </button>
+              </Button>
             </div>
           )}
         </>
@@ -233,65 +278,86 @@ function BusinessesCatalog() {
 
   return (
     <>
-      <h2 className="result-count" style={{ marginTop: '1rem' }}>
-        Catálogo de negocios
-      </h2>
-      <div className="filters">
-        <Field
-          label="Buscar"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Nombre del negocio…"
-        />
-        <label className="field">
-          <span className="field-label">Tipo de negocio</span>
-          <select className="field-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">Todas</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-slate-600">Buscar</span>
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Nombre del negocio…"
+            prefix={<SearchOutlined className="text-slate-400" />}
+            allowClear
+          />
         </label>
+        <CategorySelect
+          placeholder="Tipo de negocio"
+          value={categoryId}
+          onChange={setCategoryId}
+          options={categories.map((c) => ({ value: c.id, label: c.name }))}
+        />
       </div>
-      {error && <p className="alert alert-error">{error}</p>}
+
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {!loading && businesses.length === 0 && (
-        <EmptyState message={search || categoryId ? 'No hay negocios que coincidan con tu búsqueda.' : 'No hay negocios publicados todavía.'} />
+        <EmptyState
+          message={
+            search || categoryId
+              ? 'No hay negocios que coincidan con tu búsqueda.'
+              : 'No hay negocios publicados todavía.'
+          }
+        />
       )}
       {!loading && businesses.length > 0 && (
-        <p className="result-count">
+        <p className="mt-4 text-sm text-slate-500">
           {businesses.length} {businesses.length === 1 ? 'negocio' : 'negocios'}
         </p>
       )}
       {loading && businesses.length === 0 && <Loading />}
       {!loading && businesses.length > 0 && (
         <>
-          <div className="grid">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {businesses.map((b) => (
-              <Link key={b.id} to={`/catalogo/${b.id}`} className="grid-item">
+              <Link
+                key={b.id}
+                to={`/catalogo/${b.id}`}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+              >
                 {b.photoUrl && (
-                  <div className="grid-item-photo">
-                    <img src={b.photoUrl} alt="" loading="lazy" decoding="async" />
+                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
+                    <img
+                      src={b.photoUrl}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
                   </div>
                 )}
-                <div className="grid-item-top">
-                  <span className="chip">{b.categoryName ?? 'General'}</span>
-                  <span className="muted">
-                    {b.itemsCount} producto{b.itemsCount === 1 ? '' : 's'}
-                  </span>
+                <div className="flex flex-1 flex-col gap-2 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+                      {b.categoryName ?? 'General'}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {b.itemsCount} producto{b.itemsCount === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                  <h2 className="text-base font-semibold text-slate-900">{b.name}</h2>
+                  {b.description && <p className="text-sm text-slate-500">{b.description}</p>}
+                  {b.address && (
+                    <p className="mt-auto inline-flex items-center gap-1 text-xs text-slate-400">
+                      <EnvironmentOutlined /> {b.address}
+                    </p>
+                  )}
                 </div>
-                <h2>{b.name}</h2>
-                {b.description && <p className="muted">{b.description}</p>}
-                {b.address && <p className="muted">📍 {b.address}</p>}
               </Link>
             ))}
           </div>
           {(search || categoryId) && (
-            <div className="empty-action">
-              <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
+            <div className="mt-4">
+              <Button type="text" onClick={clearFilters}>
                 Limpiar filtros
-              </button>
+              </Button>
             </div>
           )}
         </>

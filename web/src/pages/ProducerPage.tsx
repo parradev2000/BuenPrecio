@@ -1,13 +1,18 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { App, Button, Select, Tag, Upload } from 'antd';
+import { EnvironmentOutlined, UploadOutlined } from '@ant-design/icons';
 import { api } from '../api/client';
 import type { Business, Category } from '../api/types';
 import { Alert, EmptyState, Field, Loading } from '../components/ui';
 import { MapPicker } from '../components/MapPicker';
 import { getCurrentPosition, reverseGeocode } from '../lib/geo';
 
+const ACCEPTED = 'image/jpeg,image/png,image/webp,image/gif';
+
 export function ProducerPage() {
   const navigate = useNavigate();
+  const { modal } = App.useApp();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,14 +75,9 @@ export function ProducerPage() {
   }
 
   function toggleForm() {
-    if (showForm) {
-      resetForm();
-      setShowForm(false);
-      setFormError(null);
-    } else {
-      resetForm();
-      setShowForm(true);
-    }
+    resetForm();
+    setFormError(null);
+    setShowForm((v) => !v);
   }
 
   function startEdit(business: Business) {
@@ -164,12 +164,9 @@ export function ProducerPage() {
     }
   }
 
-  async function onPhotoChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  async function uploadPhoto(file: File) {
     if (file.size > 5 * 1024 * 1024) {
       setFormError('El archivo es demasiado grande (máximo 5 MB)');
-      event.target.value = '';
       return;
     }
     const body = new FormData();
@@ -183,14 +180,10 @@ export function ProducerPage() {
       setFormError(e instanceof Error ? e.message : 'No se pudo subir la foto');
     } finally {
       setPhotoUploading(false);
-      event.target.value = '';
     }
   }
 
-  async function toggleActive(business: Business) {
-    if (business.active && !window.confirm(`¿Desactivar "${business.name}"? Dejará de verse en el catálogo.`)) {
-      return;
-    }
+  async function doToggle(business: Business) {
     setFormError(null);
     try {
       await api(`/businesses/${business.id}`, {
@@ -204,127 +197,222 @@ export function ProducerPage() {
     }
   }
 
+  function toggleActive(business: Business) {
+    if (!business.active) {
+      void doToggle(business);
+      return;
+    }
+    modal.confirm({
+      title: 'Desactivar negocio',
+      content: `¿Desactivar "${business.name}"? Dejará de verse en el catálogo.`,
+      okText: 'Desactivar',
+      okButtonProps: { danger: true },
+      cancelText: 'Cancelar',
+      onOk: () => doToggle(business),
+    });
+  }
+
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1>Mis negocios</h1>
-        <button type="button" className="btn btn-primary" onClick={toggleForm}>
+    <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Mis negocios</h1>
+        <Button type={showForm ? 'default' : 'primary'} onClick={toggleForm}>
           {showForm ? 'Cancelar' : 'Nuevo negocio'}
-        </button>
+        </Button>
       </div>
 
-      {error && <Alert kind="error">{error}</Alert>}
+      {error && (
+        <div className="mt-4">
+          <Alert kind="error">{error}</Alert>
+        </div>
+      )}
 
       {showForm && (
-        <form onSubmit={saveBusiness} className="form card">
-          <h2>{editing ? 'Editar negocio' : 'Nuevo negocio'}</h2>
-          {formError && <Alert kind="error">{formError}</Alert>}
-          <Field label="Nombre *" value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={200} placeholder="Ej. Cafetería La Esquina" />
-          <Field label="Descripción" value={form.description} onChange={(e) => set('description', e.target.value)} maxLength={500} />
-          <label className="field">
-            <span className="field-label">Foto del negocio</span>
-            <input
-              className="field-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={(e) => void onPhotoChange(e)}
+        <form
+          onSubmit={saveBusiness}
+          className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+        >
+          <h2 className="text-lg font-semibold text-slate-900">
+            {editing ? 'Editar negocio' : 'Nuevo negocio'}
+          </h2>
+          <div className="mt-4">
+            {formError && <Alert kind="error">{formError}</Alert>}
+            <Field
+              label="Nombre *"
+              value={form.name}
+              onChange={(e) => set('name', e.target.value)}
+              maxLength={200}
+              placeholder="Ej. Cafetería La Esquina"
             />
-            {photoUploading && <span className="field-error">Subiendo foto…</span>}
-          </label>
-          {!photoUploading && form.photoUrl && (
-            <div className="item-photo-content">
-              <img src={form.photoUrl} alt="" className="item-thumb" />
-              <span className="muted">Foto cargada</span>
+            <Field
+              label="Descripción"
+              value={form.description}
+              onChange={(e) => set('description', e.target.value)}
+              maxLength={500}
+            />
+
+            <div className="mb-3">
+              <span className="mb-1 block text-sm font-medium text-slate-600">Foto del negocio</span>
+              <div className="flex flex-wrap items-center gap-3">
+                <Upload
+                  accept={ACCEPTED}
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    void uploadPhoto(file);
+                    return false;
+                  }}
+                >
+                  <Button icon={<UploadOutlined />} loading={photoUploading}>
+                    {photoUploading ? 'Subiendo…' : 'Subir foto'}
+                  </Button>
+                </Upload>
+                {!photoUploading && form.photoUrl && (
+                  <img
+                    src={form.photoUrl}
+                    alt=""
+                    className="h-14 w-14 rounded-lg border border-slate-200 object-cover"
+                  />
+                )}
+              </div>
             </div>
-          )}
-          <Field label="Dirección" value={form.address} onChange={(e) => set('address', e.target.value)} maxLength={300} />
-          <div className="map-actions">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowMap((v) => !v)}>
-              {showMap ? 'Ocultar mapa' : 'Elegir en el mapa'}
-            </button>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => void gps()}>
-              Usar mi ubicación
-            </button>
+
+            <Field
+              label="Dirección"
+              value={form.address}
+              onChange={(e) => set('address', e.target.value)}
+              maxLength={300}
+            />
+            <div className="mb-2 flex flex-wrap gap-2">
+              <Button size="small" onClick={() => setShowMap((v) => !v)}>
+                {showMap ? 'Ocultar mapa' : 'Elegir en el mapa'}
+              </Button>
+              <Button size="small" onClick={() => void gps()}>
+                Usar mi ubicación
+              </Button>
+            </div>
+            {(coords.latitude !== undefined || coords.longitude !== undefined) && (
+              <p className="mb-3 text-sm text-slate-500">
+                Ubicación fijada ({coords.latitude?.toFixed(4)}, {coords.longitude?.toFixed(4)})
+              </p>
+            )}
+            {showMap && (
+              <div className="mb-3">
+                <MapPicker
+                  onPick={(pick) => {
+                    set('address', pick.address);
+                    setCoords({ latitude: pick.latitude, longitude: pick.longitude });
+                    setShowMap(false);
+                  }}
+                />
+              </div>
+            )}
+
+            <Field
+              label="Teléfono"
+              value={form.phone}
+              onChange={(e) => set('phone', e.target.value)}
+              maxLength={30}
+            />
+
+            <div className="mb-3">
+              <span className="mb-1 block text-sm font-medium text-slate-600">Tipo de negocio</span>
+              <div className="flex gap-2">
+                <Select
+                  allowClear
+                  className="flex-1"
+                  value={form.categoryId || undefined}
+                  onChange={(v) => set('categoryId', v ?? '')}
+                  placeholder="Sin tipo de negocio"
+                  options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                />
+                <Button onClick={() => setShowNewCat((v) => !v)}>
+                  {showNewCat ? 'Cancelar' : '+ Nueva'}
+                </Button>
+              </div>
+            </div>
+            {showNewCat && (
+              <div className="mb-3 flex items-end gap-2">
+                <div className="flex-1">
+                  <Field
+                    label="Nuevo tipo de negocio"
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="Ej. Panadería"
+                  />
+                </div>
+                <Button
+                  type="primary"
+                  className="mb-3"
+                  loading={catBusy}
+                  disabled={!newCatName.trim()}
+                  onClick={() => void createCategory()}
+                >
+                  Crear
+                </Button>
+              </div>
+            )}
+            {catError && <Alert kind="error">{catError}</Alert>}
+
+            <Button type="primary" htmlType="submit" loading={busy} disabled={!form.name.trim()}>
+              {editing ? 'Guardar cambios' : 'Crear negocio'}
+            </Button>
           </div>
-          {(coords.latitude !== undefined || coords.longitude !== undefined) && (
-            <p className="muted">
-              Ubicación fijada ({coords.latitude?.toFixed(4)}, {coords.longitude?.toFixed(4)})
-            </p>
-          )}
-          {showMap && <MapPicker onPick={(pick) => { set('address', pick.address); setCoords({ latitude: pick.latitude, longitude: pick.longitude }); setShowMap(false); }} />}
-          <Field label="Teléfono" value={form.phone} onChange={(e) => set('phone', e.target.value)} maxLength={30} />
-          <label className="field">
-            <span className="field-label">Tipo de negocio</span>
-            <div className="inline-field">
-              <select className="field-input" value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)}>
-                <option value="">Sin tipo de negocio</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowNewCat((v) => !v)}>
-                {showNewCat ? 'Cancelar' : '+ Nueva'}
-              </button>
-            </div>
-          </label>
-          {showNewCat && (
-            <div className="inline-field">
-              <Field
-                label="Nuevo tipo de negocio"
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-                placeholder="Ej. Panadería"
-              />
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                disabled={catBusy || !newCatName.trim()}
-                onClick={() => void createCategory()}
-              >
-                {catBusy ? '…' : 'Crear'}
-              </button>
-            </div>
-          )}
-          {catError && <Alert kind="error">{catError}</Alert>}
-          <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim()}>
-            {busy ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear negocio'}
-          </button>
         </form>
       )}
 
-      {loading && <Loading />}
-      {!loading && businesses.length === 0 && (
-        <EmptyState
-          message="Aún no tienes negocios. ¡Crea el primero!"
-          action={
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => { resetForm(); setShowForm(true); }}>
-              Crear negocio
-            </button>
-          }
-        />
-      )}
-      <div className="grid">
-        {businesses.map((b) => (
-          <div key={b.id} className="grid-item">
-            <span className={`chip ${b.active ? '' : 'chip-off'}`}>{b.active ? 'Activo' : 'Desactivado'}</span>
-            <h2>{b.name}</h2>
-            {b.address && <p className="muted">{b.address}</p>}
-            <p className="muted">{b.itemsCount ?? 0} producto{b.itemsCount === 1 ? '' : 's'}</p>
-            <div className="row-actions">
-              <Link to={`/mis-negocios/${b.id}`} className="btn btn-secondary btn-sm">
-                Gestionar
-              </Link>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEdit(b)}>
-                Editar
-              </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => void toggleActive(b)}>
-                {b.active ? 'Desactivar' : 'Activar'}
-              </button>
+      <div className="mt-6">
+        {loading && <Loading />}
+        {!loading && businesses.length === 0 && (
+          <EmptyState
+            message="Aún no tienes negocios. ¡Crea el primero!"
+            action={
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => {
+                  resetForm();
+                  setShowForm(true);
+                }}
+              >
+                Crear negocio
+              </Button>
+            }
+          />
+        )}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {businesses.map((b) => (
+            <div
+              key={b.id}
+              className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <div>
+                <Tag color={b.active ? 'green' : 'default'}>{b.active ? 'Activo' : 'Desactivado'}</Tag>
+              </div>
+              <h2 className="text-base font-semibold text-slate-900">{b.name}</h2>
+              {b.address && (
+                <p className="inline-flex items-center gap-1 text-sm text-slate-500">
+                  <EnvironmentOutlined /> {b.address}
+                </p>
+              )}
+              <p className="text-sm text-slate-500">
+                {b.itemsCount ?? 0} producto{b.itemsCount === 1 ? '' : 's'}
+              </p>
+              <div className="mt-auto flex flex-wrap gap-2 pt-2">
+                <Link to={`/mis-negocios/${b.id}`}>
+                  <Button size="small" type="primary">
+                    Gestionar
+                  </Button>
+                </Link>
+                <Button size="small" onClick={() => startEdit(b)}>
+                  Editar
+                </Button>
+                <Button size="small" type="text" onClick={() => toggleActive(b)}>
+                  {b.active ? 'Desactivar' : 'Activar'}
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

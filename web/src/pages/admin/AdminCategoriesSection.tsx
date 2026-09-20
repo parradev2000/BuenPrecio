@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { App, Button, Modal, Popconfirm, Table, Tag, type TableProps } from 'antd';
 import { api } from '../../api/client';
 import type { Category, CategoryKind } from '../../api/types';
-import { Alert, EmptyState, Field, Loading, Pagination } from '../../components/ui';
-
-const PAGE_SIZE = 10;
+import { Alert, Field } from '../../components/ui';
 
 export function AdminCategoriesSection() {
+  const { message } = App.useApp();
   const [items, setItems] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,16 +14,7 @@ export function AdminCategoriesSection() {
   const [formError, setFormError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Category | null>(null);
   const [editName, setEditName] = useState('');
-  const [page, setPage] = useState(1);
-
-  const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-
-  useEffect(() => {
-    if (page > pages) setPage(pages);
-  }, [page, pages]);
-
-  const start = (page - 1) * PAGE_SIZE;
-  const paged = items.slice(start, start + PAGE_SIZE);
+  const [modalBusy, setModalBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,6 +40,7 @@ export function AdminCategoriesSection() {
     try {
       await api('/categories', { method: 'POST', body: form, auth: true });
       setForm({ name: '', kind: 'negocio' });
+      message.success('Tipo de negocio creado');
       await load();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'No se pudo crear');
@@ -57,150 +49,149 @@ export function AdminCategoriesSection() {
     }
   }
 
-  async function saveEdit(e: FormEvent) {
-    e.preventDefault();
+  async function saveEdit() {
     if (!editing) return;
-    setBusy(true);
+    setModalBusy(true);
     setError(null);
     try {
       await api(`/categories/${editing.id}`, { method: 'PATCH', body: { name: editName.trim() }, auth: true });
       setEditing(null);
+      message.success('Tipo de negocio actualizado');
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar');
     } finally {
-      setBusy(false);
+      setModalBusy(false);
     }
   }
 
   async function remove(category: Category) {
-    if (!window.confirm(`¿Eliminar el tipo de negocio "${category.name}"?`)) {
-      return;
-    }
     setError(null);
     try {
       await api(`/categories/${category.id}`, { method: 'DELETE', auth: true });
+      message.success('Tipo de negocio eliminado');
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo eliminar');
     }
   }
 
-  return (
-    <section className="admin-card">
-      <div className="admin-head">
-        <h2>Tipos de negocio</h2>
-        <span className="badge badge-neutral">
-          {items.length} {items.length === 1 ? 'tipo' : 'tipos'}
+  const columns: TableProps<Category>['columns'] = [
+    {
+      title: 'Nombre',
+      dataIndex: 'name',
+      render: (_, c) => (
+        <span className="flex items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-700">
+            {c.name[0]?.toUpperCase() ?? 'N'}
+          </span>
+          <span className="flex flex-col gap-1">
+            <strong className="font-medium text-slate-900">{c.name}</strong>
+            <Tag color="green" className="w-fit">
+              {c.kind === 'negocio' ? 'Negocio' : 'Producto'}
+            </Tag>
+          </span>
         </span>
+      ),
+    },
+    {
+      title: 'Creada',
+      dataIndex: 'createdAt',
+      responsive: ['sm'],
+      render: (value: string) => (
+        <span className="text-slate-500">{new Date(value).toLocaleDateString('es-CU')}</span>
+      ),
+    },
+    {
+      title: 'Acciones',
+      key: 'actions',
+      render: (_, c) => (
+        <div className="flex gap-2">
+          <Button
+            size="small"
+            onClick={() => {
+              setEditing(c);
+              setEditName(c.name);
+            }}
+          >
+            Editar
+          </Button>
+          <Popconfirm
+            title="Eliminar tipo de negocio"
+            description={`¿Eliminar "${c.name}"?`}
+            okText="Eliminar"
+            cancelText="Cancelar"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => void remove(c)}
+          >
+            <Button size="small" danger>
+              Eliminar
+            </Button>
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <section>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">Tipos de negocio</h2>
+        <Tag>
+          {items.length} {items.length === 1 ? 'tipo' : 'tipos'}
+        </Tag>
       </div>
 
-      <form onSubmit={create} className="form">
-        {formError && <Alert kind="error">{formError}</Alert>}
-        <div className="form-row">
+      <form onSubmit={create} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex-1">
           <Field
             label="Nuevo tipo de negocio *"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
-          <label className="field">
-            <span className="field-label">Tipo</span>
-            <select className="field-input" value={form.kind} onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as CategoryKind }))}>
-              <option value="negocio">Negocio</option>
-            </select>
-          </label>
         </div>
-        <button type="submit" className="btn btn-primary" disabled={busy || !form.name.trim()}>
-          {busy ? 'Creando…' : 'Crear tipo de negocio'}
-        </button>
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={busy}
+          disabled={!form.name.trim()}
+          className="mb-3"
+        >
+          Crear tipo de negocio
+        </Button>
       </form>
 
+      {formError && <Alert kind="error">{formError}</Alert>}
       {error && <Alert kind="error">{error}</Alert>}
-      {loading && <Loading />}
-      {!loading && items.length === 0 && <EmptyState message="No hay tipos de negocio creados." />}
 
-      {!loading && items.length > 0 && (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th className="hide-sm">Creada</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paged.map((c) => (
-                <tr key={c.id}>
-                  {editing?.id === c.id ? (
-                    <>
-                      <td data-label="Nombre">
-                        <form id={`edit-${c.id}`} onSubmit={saveEdit}>
-                          <Field
-                            label="Nombre *"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            maxLength={100}
-                            autoFocus
-                          />
-                        </form>
-                      </td>
-                      <td className="hide-sm" data-label="Creada" />
-                      <td data-label="Acciones">
-                        <div className="item-row-actions">
-                          <button type="submit" form={`edit-${c.id}`} className="btn btn-primary btn-sm" disabled={busy || !editName.trim()}>
-                            {busy ? '…' : 'Guardar'}
-                          </button>
-                          <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setEditing(null)}>
-                            Cancelar
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td data-label="Nombre">
-                        <span className="admin-cell-user">
-                          <span className="avatar-initial">{c.name[0]?.toUpperCase() ?? 'N'}</span>
-                          <span className="cell-meta">
-                            <strong>{c.name}</strong>
-                            <span>
-                              <span className="badge badge-success">
-                                {c.kind === 'negocio' ? 'Negocio' : 'Producto'}
-                              </span>
-                            </span>
-                          </span>
-                        </span>
-                      </td>
-                      <td className="cell-muted hide-sm" data-label="Creada">{new Date(c.createdAt).toLocaleDateString('es-CU')}</td>
-                      <td data-label="Acciones">
-                        <div className="item-row-actions">
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => {
-                              setEditing(c);
-                              setEditName(c.name);
-                            }}
-                          >
-                            Editar
-                          </button>
-                          <button type="button" className="btn btn-danger btn-sm" onClick={() => void remove(c)}>
-                            Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
-</tbody>
-            </table>
-        </div>
-      )}
-      {!loading && items.length > 0 && (
-        <Pagination page={page} pages={pages} total={items.length} pageSize={PAGE_SIZE} onChange={setPage} />
-      )}
+      <Table<Category>
+        className="mt-2"
+        rowKey="id"
+        loading={loading}
+        dataSource={items}
+        columns={columns}
+        scroll={{ x: 'max-content' }}
+        pagination={{ pageSize: 10, showSizeChanger: false }}
+      />
+
+      <Modal
+        open={editing != null}
+        title="Editar tipo de negocio"
+        okText="Guardar"
+        cancelText="Cancelar"
+        confirmLoading={modalBusy}
+        okButtonProps={{ disabled: !editName.trim() }}
+        onOk={() => void saveEdit()}
+        onCancel={() => setEditing(null)}
+      >
+        <Field
+          label="Nombre *"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          maxLength={100}
+          autoFocus
+        />
+      </Modal>
     </section>
   );
 }

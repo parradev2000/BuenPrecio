@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Alert, Button, Screen, TextField } from '../src/components/ui';
-import { COLORS } from '../src/lib/format';
+import { Text, View } from 'react-native';
+import { Alert, Button, Card, Screen, TextField } from '../src/components/ui';
 import {
   API_BASE,
   getApiBase,
@@ -50,23 +49,23 @@ export default function ServerScreen() {
     setBusy(false);
   }
 
-  const defaultBase = Array.isArray(API_BASE.split(':')) ? API_BASE : API_BASE;
+  const defaultBase = API_BASE;
   const inUse = getSavedApiBase() ?? defaultBase;
 
   return (
     <Screen>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Servidor de la API</Text>
-        <Text style={styles.muted}>
-          La app guarda aquí la dirección del servidor. Es útil si el Mac y el
-          teléfono están en redes distintas o si cambia la IP de la red local.
+      <Card>
+        <Text className="text-base font-bold text-ink">Servidor de la API</Text>
+        <Text className="text-[13px] leading-5 text-muted">
+          La app guarda aquí la dirección del servidor. Es útil si el Mac y el teléfono están en
+          redes distintas o si cambia la IP de la red local.
         </Text>
-      </View>
+      </Card>
 
       {message && <Alert kind="success">{message}</Alert>}
       {error && <Alert kind="error">{error}</Alert>}
 
-      <View style={styles.card}>
+      <Card>
         <TextField
           label="Dirección del servidor"
           autoCapitalize="none"
@@ -79,67 +78,38 @@ export default function ServerScreen() {
             setError(null);
           }}
         />
-        <Text style={styles.muted}>
-          Valor en uso: <Text style={styles.code}>{inUse || '—'}</Text>
+        <Text className="text-[13px] text-muted">
+          Valor en uso: <Text className="font-semibold text-brand-700">{inUse || '—'}</Text>
         </Text>
 
-        <View style={styles.row}>
-          <Button
-            title={busy ? 'Guardando…' : 'Guardar y probar'}
-            onPress={handleSave}
-            disabled={busy || !value.trim()}
-          />
-          <Button
-            variant="ghost"
-            title="Restablecer"
-            onPress={handleReset}
-            disabled={busy || !saved}
-          />
+        <View className="mt-2 flex-row items-center gap-2">
+          <View className="flex-1">
+            <Button
+              title={busy ? 'Guardando…' : 'Guardar y probar'}
+              onPress={handleSave}
+              disabled={busy || !value.trim()}
+            />
+          </View>
+          <View className="flex-1">
+            <Button
+              variant="ghost"
+              title="Restablecer"
+              onPress={handleReset}
+              disabled={busy || !saved}
+            />
+          </View>
         </View>
-      </View>
+      </Card>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Consejo</Text>
-        <Text style={styles.muted}>
-          Si abres la app al mismo Wi-Fi que el Mac, usa la IP local (empieza
-          por 192.168.) con el puerto 3000, por ejemplo{' '}
-          <Text style={styles.code}>{defaultBase}</Text>. Para que funcione, el
-          Mac debe permitir conexiones entrantes (Ajustes → Firewall → permitir
-          Node.js).
+      <Card>
+        <Text className="text-base font-bold text-ink">Consejo</Text>
+        <Text className="text-[13px] leading-5 text-muted">
+          Si abres la app al mismo Wi-Fi que el Mac, usa la IP local (empieza por 192.168.) con el
+          puerto 3000, por ejemplo{' '}
+          <Text className="font-semibold text-brand-700">{defaultBase}</Text>. Para que funcione, el Mac
+          debe permitir conexiones entrantes (Ajustes → Firewall → permitir Node.js).
         </Text>
-      </View>
+      </Card>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    gap: 5,
-    marginBottom: 10,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  muted: {
-    color: COLORS.muted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  code: {
-    fontFamily: 'monospace',
-    color: COLORS.primary,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-});

@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { App, Button, Input, Select, Table, Tag, type TableProps } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { api } from '../../api/client';
 import type { AdminBusiness } from '../../api/types';
-import { Alert, EmptyState, Loading, Pagination } from '../../components/ui';
-
-const PAGE_SIZE = 10;
+import { Alert } from '../../components/ui';
 
 export function AdminBusinessesSection() {
+  const { modal, message } = App.useApp();
   const [items, setItems] = useState<AdminBusiness[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all');
-  const [page, setPage] = useState(1);
 
   useEffect(() => {
     void load();
@@ -30,10 +30,7 @@ export function AdminBusinessesSection() {
     }
   }
 
-  async function toggle(business: AdminBusiness) {
-    if (business.active && !window.confirm(`¿Desactivar "${business.name}"? Dejará de verse en el catálogo.`)) {
-      return;
-    }
+  async function doToggle(business: AdminBusiness) {
     setError(null);
     try {
       await api(`/businesses/${business.id}`, {
@@ -41,111 +38,126 @@ export function AdminBusinessesSection() {
         body: { active: !business.active },
         auth: true,
       });
+      message.success('Negocio actualizado');
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo actualizar');
     }
   }
 
-  const query = search.trim().toLowerCase();
-  const visible = items.filter((b) => {
-    if (query) {
-      const haystack = `${b.name} ${b.ownerName} ${b.ownerEmail}`.toLowerCase();
-      if (!haystack.includes(query)) return false;
+  function toggle(business: AdminBusiness) {
+    if (!business.active) {
+      void doToggle(business);
+      return;
     }
-    if (status === 'active' && !b.active) return false;
-    if (status === 'inactive' && b.active) return false;
-    return true;
-  });
+    modal.confirm({
+      title: 'Desactivar negocio',
+      content: `¿Desactivar "${business.name}"? Dejará de verse en el catálogo.`,
+      okText: 'Desactivar',
+      okButtonProps: { danger: true },
+      cancelText: 'Cancelar',
+      onOk: () => doToggle(business),
+    });
+  }
 
-  const pages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const visible = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return items.filter((b) => {
+      if (query) {
+        const haystack = `${b.name} ${b.ownerName} ${b.ownerEmail}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      if (status === 'active' && !b.active) return false;
+      if (status === 'inactive' && b.active) return false;
+      return true;
+    });
+  }, [items, search, status]);
 
-  useEffect(() => {
-    if (page > pages) setPage(pages);
-  }, [page, pages]);
-
-  const start = (page - 1) * PAGE_SIZE;
-  const paged = visible.slice(start, start + PAGE_SIZE);
+  const columns: TableProps<AdminBusiness>['columns'] = [
+    {
+      title: 'Negocio',
+      dataIndex: 'name',
+      render: (_, b) => (
+        <span className="flex items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-700">
+            {b.name[0]?.toUpperCase() ?? 'N'}
+          </span>
+          <strong className="font-medium text-slate-900">{b.name}</strong>
+        </span>
+      ),
+    },
+    {
+      title: 'Estado',
+      key: 'status',
+      render: (_, b) => <Tag color={b.active ? 'green' : 'default'}>{b.active ? 'Activo' : 'Inactivo'}</Tag>,
+    },
+    { title: 'Dueño', dataIndex: 'ownerName', responsive: ['lg'] },
+    {
+      title: 'Correo',
+      dataIndex: 'ownerEmail',
+      responsive: ['lg'],
+      render: (value: string) => <span className="text-slate-500">{value}</span>,
+    },
+    {
+      title: 'Ubicación',
+      dataIndex: 'address',
+      responsive: ['xl'],
+      render: (value: string | null) => <span className="text-slate-500">{value ?? '—'}</span>,
+    },
+    { title: 'Productos', dataIndex: 'itemsCount', responsive: ['sm'] },
+    {
+      title: 'Acciones',
+      key: 'actions',
+      render: (_, b) => (
+        <Button size="small" type="text" onClick={() => toggle(b)}>
+          {b.active ? 'Desactivar' : 'Activar'}
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <section className="admin-card">
-      <div className="admin-head">
-        <h2>Negocios</h2>
-        <div className="admin-filters">
-          <input
-            className="field-input"
+    <section>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">Negocios</h2>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Input
+            allowClear
             placeholder="Buscar por nombre o dueño…"
+            prefix={<SearchOutlined className="text-slate-400" />}
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
+            className="sm:w-64"
           />
-          <select
-            className="field-input"
+          <Select
             value={status}
-            onChange={(e) => {
-              setStatus(e.target.value as typeof status);
-              setPage(1);
-            }}
-          >
-            <option value="all">Todos los estados</option>
-            <option value="active">Activos</option>
-            <option value="inactive">Inactivos</option>
-          </select>
+            onChange={(value) => setStatus(value)}
+            className="sm:w-44"
+            options={[
+              { value: 'all', label: 'Todos los estados' },
+              { value: 'active', label: 'Activos' },
+              { value: 'inactive', label: 'Inactivos' },
+            ]}
+          />
         </div>
       </div>
 
-      {error && <Alert kind="error">{error}</Alert>}
-      {loading && <Loading />}
-      {!loading && visible.length === 0 && <EmptyState message="No hay negocios que coincidan." />}
-
-      {!loading && visible.length > 0 && (
-        <div className="admin-table-wrap">
-          <table className="admin-table admin-table-wide">
-            <thead>
-              <tr>
-                <th>Negocio</th>
-                <th>Estado</th>
-                <th className="hide-sm">Dueño</th>
-                <th className="hide-sm">Correo</th>
-                <th className="hide-sm">Ubicación</th>
-                <th>Productos</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paged.map((b) => (
-                <tr key={b.id}>
-                  <td data-label="Negocio">
-                    <span className="admin-cell-user">
-                      <span className="avatar-initial">{b.name[0]?.toUpperCase() ?? 'N'}</span>
-                      <strong>{b.name}</strong>
-                    </span>
-                  </td>
-                  <td data-label="Estado">
-                    <span className={`badge ${b.active ? 'badge-success' : 'badge-neutral'}`}>
-                      {b.active ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td className="hide-sm" data-label="Dueño">{b.ownerName}</td>
-                  <td className="cell-muted hide-sm" data-label="Correo">{b.ownerEmail}</td>
-                  <td className="cell-muted hide-sm" data-label="Ubicación">{b.address ?? '—'}</td>
-                  <td data-label="Productos">{b.itemsCount}</td>
-                  <td data-label="Acciones">
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => void toggle(b)}>
-                      {b.active ? 'Desactivar' : 'Activar'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-</tbody>
-            </table>
+      {error && (
+        <div className="mt-3">
+          <Alert kind="error">{error}</Alert>
         </div>
       )}
-      {!loading && visible.length > 0 && (
-        <Pagination page={page} pages={pages} total={visible.length} pageSize={PAGE_SIZE} onChange={setPage} />
-      )}
+
+      <Table<AdminBusiness>
+        className="mt-3"
+        rowKey="id"
+        loading={loading}
+        dataSource={visible}
+        columns={columns}
+        scroll={{ x: 'max-content' }}
+        pagination={{ pageSize: 10, showSizeChanger: false }}
+        locale={{ emptyText: 'No hay negocios que coincidan.' }}
+      />
     </section>
   );
 }

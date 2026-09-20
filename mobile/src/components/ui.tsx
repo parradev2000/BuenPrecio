@@ -1,15 +1,22 @@
 import type { ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { COLORS } from '../lib/format';
 
 type BtnVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+
+const BTN_BG: Record<BtnVariant, string> = {
+  primary: 'bg-brand-600',
+  secondary: 'bg-white border border-edge',
+  danger: 'bg-red-600',
+  ghost: 'bg-transparent',
+};
+
+const BTN_TEXT: Record<BtnVariant, string> = {
+  primary: 'text-white',
+  secondary: 'text-ink',
+  danger: 'text-white',
+  ghost: 'text-muted',
+};
 
 export function Button({
   title,
@@ -22,29 +29,15 @@ export function Button({
   variant?: BtnVariant;
   disabled?: boolean;
 }) {
-  const styleMap: Record<BtnVariant, Record<string, unknown>> = {
-    primary: { backgroundColor: COLORS.primary },
-    secondary: { backgroundColor: COLORS.card, borderColor: COLORS.border, borderWidth: 1 },
-    danger: { backgroundColor: COLORS.danger },
-    ghost: { backgroundColor: 'transparent' },
-  };
-  const textMap: Record<BtnVariant, { color: string }> = {
-    primary: { color: '#fff' },
-    secondary: { color: COLORS.text },
-    danger: { color: '#fff' },
-    ghost: { color: COLORS.muted },
-  };
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.btn,
-        styleMap[variant],
-        (pressed || disabled) && styles.btnPressed,
-      ]}
+      className={`items-center justify-center rounded-xl px-4 py-3 active:opacity-70 ${BTN_BG[variant]} ${
+        disabled ? 'opacity-60' : ''
+      }`}
       onPress={onPress}
       disabled={disabled}
     >
-      <Text style={[styles.btnText, textMap[variant]]}>{title}</Text>
+      <Text className={`font-bold ${BTN_TEXT[variant]}`}>{title}</Text>
     </Pressable>
   );
 }
@@ -54,16 +47,28 @@ export function TextField({
   ...props
 }: { label: string } & React.ComponentProps<typeof TextInput>) {
   return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+    <View className="mb-3">
+      <Text className="mb-1 text-[13px] font-semibold text-muted">{label}</Text>
       <TextInput
-        style={styles.input}
+        className="rounded-xl border border-edge bg-white px-3 py-2.5 text-base text-ink"
         placeholderTextColor={COLORS.muted}
         {...props}
       />
     </View>
   );
 }
+
+const ALERT_BG = {
+  error: 'bg-red-50',
+  success: 'bg-brand-50',
+  info: 'bg-indigo-50',
+} as const;
+
+const ALERT_TEXT = {
+  error: 'text-red-700',
+  success: 'text-brand-700',
+  info: 'text-indigo-700',
+} as const;
 
 export function Alert({
   kind,
@@ -72,88 +77,34 @@ export function Alert({
   kind: 'error' | 'success' | 'info';
   children: ReactNode;
 }) {
-  const bg =
-    kind === 'error' ? '#fdecec' : kind === 'success' ? '#e9f7ef' : '#eef2ff';
-  const color =
-    kind === 'error' ? COLORS.dangerDark : kind === 'success' ? COLORS.primaryDark : '#3b4f9e';
   return (
-    <View style={[styles.alert, { backgroundColor: bg }]}>
-      <Text style={{ color }}>{children}</Text>
+    <View className={`my-2 rounded-xl p-3 ${ALERT_BG[kind]}`}>
+      <Text className={ALERT_TEXT[kind]}>{children}</Text>
     </View>
   );
 }
 
 export function Loading() {
   return (
-    <View style={styles.loading}>
+    <View className="items-center gap-2 py-10">
       <ActivityIndicator color={COLORS.primary} />
-      <Text style={styles.loadingText}>Cargando…</Text>
+      <Text className="text-muted">Cargando…</Text>
     </View>
   );
 }
 
 export function EmptyState({ message }: { message: string }) {
-  return <Text style={styles.empty}>{message}</Text>;
+  return <Text className="py-8 text-center text-muted">{message}</Text>;
+}
+
+export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <View className={`gap-2 rounded-2xl border border-edge bg-white p-4 ${className}`}>
+      {children}
+    </View>
+  );
 }
 
 export function Screen({ children }: { children: ReactNode }) {
-  return <View style={styles.screen}>{children}</View>;
+  return <View className="flex-1 bg-canvas p-4">{children}</View>;
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-    padding: 16,
-  },
-  btn: {
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnPressed: {
-    opacity: 0.6,
-  },
-  btnText: {
-    fontWeight: '700',
-  },
-  field: {
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.muted,
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  alert: {
-    borderRadius: 10,
-    padding: 12,
-    marginVertical: 8,
-  },
-  loading: {
-    paddingVertical: 40,
-    alignItems: 'center',
-    gap: 8,
-  },
-  loadingText: {
-    color: COLORS.muted,
-  },
-  empty: {
-    color: COLORS.muted,
-    textAlign: 'center',
-    paddingVertical: 32,
-  },
-});

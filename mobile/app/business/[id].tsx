@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { api } from '../../src/api/client';
 import type { CatalogBusiness, PublicItem } from '../../src/api/types';
-import { COLORS, formatPrice, mediaUrl } from '../../src/lib/format';
+import { formatPrice, mediaUrl } from '../../src/lib/format';
 import { EmptyState, Loading, Screen } from '../../src/components/ui';
 
 export default function BusinessDetailScreen() {
@@ -30,7 +30,7 @@ export default function BusinessDetailScreen() {
   if (error) {
     return (
       <Screen>
-        <Text style={styles.error}>{error}</Text>
+        <Text className="text-red-600">{error}</Text>
       </Screen>
     );
   }
@@ -44,11 +44,11 @@ export default function BusinessDetailScreen() {
 
   return (
     <Screen>
-      <Text style={styles.title}>{business.name}</Text>
-      <Text style={styles.muted}>{business.categoryName ?? 'General'}</Text>
-      {business.description ? <Text style={styles.body}>{business.description}</Text> : null}
-      {business.address ? <Text style={styles.muted}>📍 {business.address}</Text> : null}
-      {business.phone ? <Text style={styles.muted}>☎️ {business.phone}</Text> : null}
+      <Text className="text-[22px] font-bold text-ink">{business.name}</Text>
+      <Text className="text-sm text-muted">{business.categoryName ?? 'General'}</Text>
+      {business.description ? <Text className="mt-1.5 text-ink">{business.description}</Text> : null}
+      {business.address ? <Text className="text-sm text-muted">📍 {business.address}</Text> : null}
+      {business.phone ? <Text className="text-sm text-muted">☎️ {business.phone}</Text> : null}
 
       {items.length === 0 ? (
         <EmptyState message="Este negocio aún no tiene productos publicados." />
@@ -58,17 +58,23 @@ export default function BusinessDetailScreen() {
           keyExtractor={(i) => i.id}
           contentContainerStyle={{ paddingVertical: 12 }}
           renderItem={({ item }) => (
-            <View style={styles.row}>
-              <View style={[styles.rowLeft, item.photoUrl && styles.rowLeftWithPhoto]}>
-                {item.photoUrl ? <Image source={{ uri: mediaUrl(item.photoUrl) ?? '' }} style={styles.itemThumb} /> : null}
-                <View>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.muted}>
+            <View className="mb-2 flex-row items-center justify-between rounded-2xl border border-edge bg-white p-3.5">
+              <View className={item.photoUrl ? 'flex-row items-center gap-2.5 shrink' : 'shrink gap-0.5'}>
+                {item.photoUrl ? (
+                  <Image
+                    source={{ uri: mediaUrl(item.photoUrl) ?? '' }}
+                    className="rounded-lg"
+                    style={{ width: 52, height: 52 }}
+                  />
+                ) : null}
+                <View className="shrink">
+                  <Text className="text-base font-semibold text-ink">{item.name}</Text>
+                  <Text className="text-sm text-muted">
                     {item.type === 'servicio' ? 'servicio' : item.unit ?? 'unidad'}
                   </Text>
                 </View>
               </View>
-              <Text style={styles.price}>{formatPrice(item.price)}</Text>
+              <Text className="ml-2 text-base font-bold text-brand-700">{formatPrice(item.price)}</Text>
             </View>
           )}
         />
@@ -76,55 +82,3 @@ export default function BusinessDetailScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  error: {
-    color: COLORS.dangerDark,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  muted: {
-    color: COLORS.muted,
-  },
-  body: {
-    marginTop: 6,
-  },
-  row: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  rowLeft: {
-    flexShrink: 1,
-    gap: 2,
-  },
-  rowLeftWithPhoto: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  itemThumb: {
-    width: 52,
-    height: 52,
-    borderRadius: 8,
-  },
-  itemName: {
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  price: {
-    fontWeight: '700',
-    color: COLORS.primary,
-    fontSize: 16,
-    marginLeft: 8,
-  },
-});

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { api } from '../../src/api/client';
 import type { CatalogProductDetail } from '../../src/api/types';
 import { useUserLocation } from '../../src/hooks/useUserLocation';
-import { COLORS, formatDistance, formatPrice, mediaUrl } from '../../src/lib/format';
+import { formatDistance, formatPrice, mediaUrl } from '../../src/lib/format';
 import { EmptyState, Loading, Screen } from '../../src/components/ui';
 
 export default function ProductDetailScreen() {
@@ -40,7 +40,7 @@ export default function ProductDetailScreen() {
   if (error) {
     return (
       <Screen>
-        <Text style={styles.error}>{error}</Text>
+        <Text className="text-red-600">{error}</Text>
       </Screen>
     );
   }
@@ -62,32 +62,41 @@ export default function ProductDetailScreen() {
     <Screen>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.backLink}>← Volver</Text>
+          <Text className="mb-2.5 text-muted">← Volver</Text>
         </Pressable>
         {product.photoUrl ? (
-          <Image source={{ uri: mediaUrl(product.photoUrl) ?? '' }} style={styles.photo} />
+          <Image
+            source={{ uri: mediaUrl(product.photoUrl) ?? '' }}
+            className="mb-3 w-full rounded-xl"
+            style={{ height: 220 }}
+          />
         ) : null}
-        <Text style={styles.title}>{product.name}</Text>
-        <View style={styles.row}>
-          <Text style={styles.chip}>{product.categoryName ?? 'General'}</Text>
-          <Text style={styles.chip}>{product.type === 'servicio' ? 'servicio' : product.unit ?? 'unidad'}</Text>
+        <Text className="mb-1.5 text-[22px] font-bold text-ink">{product.name}</Text>
+        <View className="mb-2 flex-row gap-2">
+          <Text className="overflow-hidden rounded-full bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700">
+            {product.categoryName ?? 'General'}
+          </Text>
+          <Text className="overflow-hidden rounded-full bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700">
+            {product.type === 'servicio' ? 'servicio' : product.unit ?? 'unidad'}
+          </Text>
         </View>
-        <Text style={styles.price}>{formatPrice(product.price)}</Text>
+        <Text className="mb-1 text-[22px] font-bold text-brand-700">{formatPrice(product.price)}</Text>
         {product.distanceKm != null ? (
-          <Text style={styles.muted}>📍 A {formatDistance(product.distanceKm)} de ti</Text>
+          <Text className="mb-0.5 text-sm text-muted">📍 A {formatDistance(product.distanceKm)} de ti</Text>
         ) : null}
-        {product.description ? <Text style={styles.body}>{product.description}</Text> : null}
+        {product.description ? <Text className="mt-2 text-ink">{product.description}</Text> : null}
 
-        <Text style={styles.section}>Negocio</Text>
-        <View style={styles.businessCard}>
+        <Text className="mb-2 mt-4 text-[17px] font-bold text-ink">Negocio</Text>
+        <View className="gap-1.5 rounded-2xl border border-edge bg-white p-3.5">
           {product.businessPhotoUrl ? (
             <Image
               source={{ uri: mediaUrl(product.businessPhotoUrl) ?? '' }}
-              style={styles.businessPhoto}
+              className="mb-1 w-full rounded-[10px]"
+              style={{ height: 120 }}
             />
           ) : null}
           <Pressable onPress={() => router.push(`/business/${product.businessId}`)}>
-            <Text style={styles.businessName}>{product.businessName}</Text>
+            <Text className="text-[17px] font-bold text-brand-700">{product.businessName}</Text>
           </Pressable>
           {product.businessAddress ? (
             <Pressable
@@ -95,12 +104,12 @@ export default function ProductDetailScreen() {
                 geoQuery && void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(geoQuery)}`)
               }
             >
-              <Text style={styles.muted}>📍 {product.businessAddress}</Text>
+              <Text className="text-sm text-muted">📍 {product.businessAddress}</Text>
             </Pressable>
           ) : null}
           {businessPhone ? (
             <Pressable onPress={() => Linking.openURL(`tel:${businessPhone.replace(/[^+\d]/g, '')}`)}>
-              <Text style={styles.muted}>☎️ {businessPhone}</Text>
+              <Text className="text-sm text-muted">☎️ {businessPhone}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -110,77 +119,3 @@ export default function ProductDetailScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  error: {
-    color: COLORS.dangerDark,
-  },
-  backLink: {
-    color: COLORS.muted,
-    marginBottom: 10,
-  },
-  photo: {
-    width: '100%',
-    height: 220,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  chip: {
-    backgroundColor: '#eaf1ec',
-    color: COLORS.primaryDark,
-    borderRadius: 999,
-    fontSize: 13,
-    fontWeight: '600',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    overflow: 'hidden',
-  },
-  price: {
-    fontWeight: '700',
-    color: COLORS.primary,
-    fontSize: 22,
-    marginBottom: 4,
-  },
-  muted: {
-    color: COLORS.muted,
-    marginBottom: 2,
-  },
-  body: {
-    marginTop: 8,
-  },
-  section: {
-    fontSize: 17,
-    fontWeight: '700',
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  businessCard: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    gap: 6,
-  },
-  businessPhoto: {
-    width: '100%',
-    height: 120,
-    borderRadius: 10,
-    marginBottom: 4,
-  },
-  businessName: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-});

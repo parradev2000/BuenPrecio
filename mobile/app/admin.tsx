@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Alert as NativeAlert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert as NativeAlert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { Redirect } from 'expo-router';
+import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 import { api, ApiError } from '../src/api/client';
 import type {
   AdminApplication,
@@ -12,9 +13,9 @@ import type {
   User,
   UserRole,
 } from '../src/api/types';
-import { Alert, Button, EmptyState, Loading, Screen, TextField } from '../src/components/ui';
+import { Alert, Button, Card, EmptyState, Loading, Screen, TextField } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
-import { badgeColors, COLORS, type BadgeTone } from '../src/lib/format';
+import { COLORS, type BadgeTone } from '../src/lib/format';
 
 type TabId = 'dashboard' | 'applications' | 'users' | 'categories' | 'productCategories' | 'businesses';
 
@@ -39,6 +40,20 @@ const STATUS_LABEL: Record<ApplicationStatus | string, string> = {
   rejected: 'Rechazada',
 };
 
+const BADGE_CLASSES: Record<BadgeTone, string> = {
+  success: 'bg-brand-50',
+  warning: 'bg-amber-50',
+  danger: 'bg-red-50',
+  neutral: 'bg-slate-100',
+};
+
+const BADGE_TEXT_CLASSES: Record<BadgeTone, string> = {
+  success: 'text-brand-700',
+  warning: 'text-amber-700',
+  danger: 'text-red-700',
+  neutral: 'text-slate-600',
+};
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   const dd = String(d.getDate()).padStart(2, '0');
@@ -49,10 +64,9 @@ function formatDate(iso: string) {
 }
 
 function Badge({ tone, children }: { tone: BadgeTone; children: ReactNode }) {
-  const { bg, fg } = badgeColors(tone);
   return (
-    <View style={[styles.badge, { backgroundColor: bg }]}>
-      <Text style={[styles.badgeText, { color: fg }]}>{children}</Text>
+    <View className={`self-start rounded-full px-2.5 py-1 ${BADGE_CLASSES[tone]}`}>
+      <Text className={`text-xs font-bold ${BADGE_TEXT_CLASSES[tone]}`}>{children}</Text>
     </View>
   );
 }
@@ -66,9 +80,30 @@ function Avatar({ name }: { name: string }) {
     .map((p) => p[0]?.toUpperCase() ?? '')
     .join('');
   return (
-    <View style={styles.avatar}>
-      <Text style={styles.avatarText}>{initials}</Text>
+    <View className="h-9 w-9 items-center justify-center rounded-full bg-brand-600">
+      <Text className="text-sm font-bold text-white">{initials}</Text>
     </View>
+  );
+}
+
+function Chip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      className={`rounded-full border px-2.5 py-1.5 active:opacity-70 ${
+        active ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+      }`}
+      onPress={onPress}
+    >
+      <Text className={`text-[13px] ${active ? 'text-white' : 'text-muted'}`}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -77,6 +112,118 @@ const APPLICATION_TONE: Record<ApplicationStatus, BadgeTone> = {
   approved: 'success',
   rejected: 'danger',
 };
+
+/** Categorical palette for pie slices, cycled when there are more slices than colors. */
+const PIE_COLORS = [
+  '#059669',
+  '#2563eb',
+  '#d97706',
+  '#7c3aed',
+  '#0891b2',
+  '#db2777',
+  '#65a30d',
+  '#e11d48',
+  '#0f766e',
+  '#f59e0b',
+];
+
+const PIE_SIZE = 108;
+const PIE_CENTER = PIE_SIZE / 2;
+const PIE_RADIUS = 50;
+/** Wedges below this share get no inline percentage label (it would not fit). */
+const PIE_MIN_LABEL_SHARE = 0.1;
+
+/** Point on the circle at `angle` radians, measured clockwise from 12 o'clock. */
+function polar(angle: number, radius: number) {
+  return {
+    x: PIE_CENTER + radius * Math.sin(angle),
+    y: PIE_CENTER - radius * Math.cos(angle),
+  };
+}
+
+/** Path for the wedge spanning two angles, apex at the center. */
+function wedgePath(start: number, end: number) {
+  const from = polar(start, PIE_RADIUS);
+  const to = polar(end, PIE_RADIUS);
+  const largeArc = end - start > Math.PI ? 1 : 0;
+  return `M ${PIE_CENTER} ${PIE_CENTER} L ${from.x} ${from.y} A ${PIE_RADIUS} ${PIE_RADIUS} 0 ${largeArc} 1 ${to.x} ${to.y} Z`;
+}
+
+function PieChart({ title, rows }: { title: string; rows: { name: string; count: number }[] }) {
+  const data = rows.filter((row) => row.count > 0);
+  const total = data.reduce((acc, row) => acc + row.count, 0);
+
+  let angle = 0;
+  const wedges = data.map((row, index) => {
+    const share = row.count / total;
+    const start = angle;
+    angle += share * Math.PI * 2;
+    return {
+      row,
+      share,
+      start,
+      end: angle,
+      mid: (start + angle) / 2,
+      color: PIE_COLORS[index % PIE_COLORS.length],
+    };
+  });
+
+  return (
+    <View className="flex-1 rounded-2xl border border-edge bg-white p-3">
+      <Text className="text-[13px] font-bold uppercase tracking-wide text-muted">{title}</Text>
+      {wedges.length === 0 ? (
+        <Text className="mt-1.5 text-[13px] text-muted">Sin datos todavía.</Text>
+      ) : (
+        <>
+          <View className="mt-2 items-center">
+            <Svg width={PIE_SIZE} height={PIE_SIZE} viewBox={`0 0 ${PIE_SIZE} ${PIE_SIZE}`}>
+              {wedges.length === 1 ? (
+                <Circle cx={PIE_CENTER} cy={PIE_CENTER} r={PIE_RADIUS} fill={wedges[0].color} />
+              ) : (
+                wedges.map((w) => (
+                  <Path
+                    key={w.row.name}
+                    d={wedgePath(w.start, w.end)}
+                    fill={w.color}
+                    stroke="#ffffff"
+                    strokeWidth={1.5}
+                    strokeLinejoin="round"
+                  />
+                ))
+              )}
+              {wedges.map((w) =>
+                w.share < PIE_MIN_LABEL_SHARE ? null : (
+                  <SvgText
+                    key={`${w.row.name}-share`}
+                    x={polar(w.mid, PIE_RADIUS * 0.6).x}
+                    y={polar(w.mid, PIE_RADIUS * 0.6).y + 3.5}
+                    fill="#ffffff"
+                    fontSize={9}
+                    fontWeight="bold"
+                    textAnchor="middle"
+                  >
+                    {`${Math.round(w.share * 100)}%`}
+                  </SvgText>
+                ),
+              )}
+            </Svg>
+          </View>
+          <View className="mt-2 gap-1">
+            {wedges.map((w) => (
+              <View key={w.row.name} className="flex-row items-center gap-1.5">
+                <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: w.color }} />
+                <Text className="flex-1 text-[11px] text-muted" numberOfLines={1}>
+                  {w.row.name}
+                </Text>
+                <Text className="text-[11px] font-bold text-ink">{w.row.count}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
 
 export default function AdminScreen() {
   const { session } = useAuth();
@@ -91,14 +238,18 @@ export default function AdminScreen() {
 
   return (
     <Screen>
-      <View style={styles.tabs}>
+      <View className="mb-3 flex-row flex-wrap gap-2">
         {TABS.map((t) => (
           <Pressable
             key={t.id}
-            style={[styles.tab, tab === t.id && styles.tabActive]}
+            className={`rounded-lg border px-3 py-2 active:opacity-70 ${
+              tab === t.id ? 'border-brand-600 bg-brand-600' : 'border-edge bg-white'
+            }`}
             onPress={() => setTab(t.id)}
           >
-            <Text style={[styles.tabText, tab === t.id && styles.tabTextActive]}>{t.label}</Text>
+            <Text className={`font-semibold ${tab === t.id ? 'text-white' : 'text-muted'}`}>
+              {t.label}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -136,56 +287,21 @@ function DashboardTab() {
 
   function StatCard({ value, label }: { value: number; label: string }) {
     return (
-      <View style={styles.statCard}>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
+      <View className="min-w-[30%] flex-1 gap-0.5 rounded-2xl border border-edge bg-white p-3">
+        <Text className="text-[22px] font-bold text-ink">{value}</Text>
+        <Text className="text-xs text-muted">{label}</Text>
       </View>
     );
   }
 
   function ChartBar({ value, max, color }: { value: number; max: number; color: string }) {
     return (
-      <View style={styles.barCol}>
-        <Text style={styles.barValue}>{value}</Text>
+      <View className="items-center gap-0.5">
+        <Text className="text-xs font-bold text-ink">{value}</Text>
         <View
-          style={[
-            styles.chartBar,
-            { height: Math.max(2, Math.round((value / max) * 130)), backgroundColor: color },
-          ]}
+          className="w-6 rounded-t"
+          style={{ height: Math.max(2, Math.round((value / max) * 130)), backgroundColor: color }}
         />
-      </View>
-    );
-  }
-
-  function BarChart({
-    title,
-    rows,
-    color,
-  }: {
-    title: string;
-    rows: { name: string; count: number }[];
-    color: string;
-  }) {
-    const max = Math.max(1, ...rows.map((r) => r.count));
-    return (
-      <View style={styles.chart}>
-        <Text style={styles.chartTitle}>{title}</Text>
-        {rows.length === 0 ? (
-          <Text style={styles.chartEmpty}>Sin datos todavía.</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chartGroups}>
-              {rows.map((row) => (
-                <View key={row.name} style={styles.chartGroup}>
-                  <ChartBar value={row.count} max={max} color={color} />
-                  <Text style={styles.chartName} numberOfLines={1}>
-                    {row.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-        )}
       </View>
     );
   }
@@ -193,30 +309,32 @@ function DashboardTab() {
   function PerBusinessChart({ rows }: { rows: { name: string; products: number; services: number }[] }) {
     const max = Math.max(1, ...rows.map((r) => r.products + r.services));
     return (
-      <View style={styles.chart}>
-        <Text style={styles.chartTitle}>Productos y servicios por negocio</Text>
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.primaryDark }]} />
-            <Text style={styles.legendText}>Productos</Text>
+      <View className="mt-5">
+        <Text className="text-[13px] font-bold uppercase tracking-wide text-muted">
+          Productos y servicios por negocio
+        </Text>
+        <View className="mt-1.5 flex-row gap-3.5">
+          <View className="flex-row items-center gap-1">
+            <View className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: COLORS.primaryDark }} />
+            <Text className="text-xs text-muted">Productos</Text>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#e19125' }]} />
-            <Text style={styles.legendText}>Servicios</Text>
+          <View className="flex-row items-center gap-1">
+            <View className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: '#d97706' }} />
+            <Text className="text-xs text-muted">Servicios</Text>
           </View>
         </View>
         {rows.length === 0 ? (
-          <Text style={styles.chartEmpty}>Sin datos todavía.</Text>
+          <Text className="mt-1.5 text-[13px] text-muted">Sin datos todavía.</Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chartGroups}>
+            <View className="mt-2 flex-row items-end gap-3.5">
               {rows.map((row) => (
-                <View key={row.name} style={styles.chartGroup}>
-                  <View style={styles.chartBars}>
+                <View key={row.name} className="items-center gap-1.5">
+                  <View className="flex-row items-end gap-1">
                     <ChartBar value={row.products} max={max} color={COLORS.primaryDark} />
-                    <ChartBar value={row.services} max={max} color="#e19125" />
+                    <ChartBar value={row.services} max={max} color="#d97706" />
                   </View>
-                  <Text style={styles.chartName} numberOfLines={1}>
+                  <Text className="max-w-[76px] text-xs text-muted" numberOfLines={1}>
                     {row.name}
                   </Text>
                 </View>
@@ -229,11 +347,11 @@ function DashboardTab() {
   }
 
   return (
-    <View style={styles.body}>
-      <View style={styles.adminHead}>
-        <View style={styles.userInfo}>
-          <Text style={styles.cardTitle}>Dashboard</Text>
-          <Text style={styles.muted}>Datos generales de la plataforma.</Text>
+    <View className="flex-1">
+      <View className="mb-2 flex-row items-center justify-between gap-2.5">
+        <View className="flex-1">
+          <Text className="text-base font-bold text-ink">Dashboard</Text>
+          <Text className="text-muted">Datos generales de la plataforma.</Text>
         </View>
         <Button title="Actualizar" variant="secondary" disabled={loading} onPress={() => void load()} />
       </View>
@@ -241,8 +359,8 @@ function DashboardTab() {
       {loading ? (
         <Loading />
       ) : stats ? (
-        <ScrollView contentContainerStyle={styles.statContent}>
-          <View style={styles.statGrid}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+          <View className="flex-row flex-wrap gap-2">
             <StatCard value={stats.totals.businesses} label="Negocios" />
             <StatCard value={stats.totals.products} label="Productos" />
             <StatCard value={stats.totals.services} label="Servicios" />
@@ -250,17 +368,10 @@ function DashboardTab() {
 
           <PerBusinessChart rows={stats.byBusiness} />
 
-          <BarChart
-            title="Negocios por tipo de negocio"
-            rows={stats.businessesByCategory}
-            color={COLORS.primary}
-          />
-
-          <BarChart
-            title="Productos por categoría de producto"
-            rows={stats.productsByCategory}
-            color="#2d6cdf"
-          />
+          <View className="mt-5 flex-row items-stretch gap-2.5">
+            <PieChart title="Negocios por tipo" rows={stats.businessesByCategory} />
+            <PieChart title="Productos por categoría" rows={stats.productsByCategory} />
+          </View>
         </ScrollView>
       ) : null}
     </View>
@@ -305,16 +416,10 @@ function ApplicationsTab() {
   }
 
   return (
-    <View style={styles.body}>
-      <View style={styles.chips}>
+    <View className="flex-1">
+      <View className="my-2 flex-row flex-wrap gap-2">
         {(['pending', 'approved', 'rejected'] as const).map((s) => (
-          <Pressable
-            key={s}
-            style={[styles.chip, status === s && styles.chipActive]}
-            onPress={() => setStatus(s)}
-          >
-            <Text style={[styles.chipText, status === s && styles.chipTextActive]}>{STATUS_LABEL[s]}</Text>
-          </Pressable>
+          <Chip key={s} label={STATUS_LABEL[s]} active={status === s} onPress={() => setStatus(s)} />
         ))}
       </View>
       {error && <Alert kind="error">{error}</Alert>}
@@ -326,32 +431,36 @@ function ApplicationsTab() {
         <FlatList
           data={items}
           keyExtractor={(a) => a.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ paddingBottom: 24 }}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.userRow}>
+            <View className="mb-2.5 gap-1.5 rounded-2xl border border-edge bg-white p-3.5">
+              <View className="flex-row items-center gap-2.5">
                 <Avatar name={item.userName} />
-                <View style={styles.userInfo}>
-                  <Text style={styles.cardTitle}>{item.userName}</Text>
-                  <Text style={styles.muted}>{item.userEmail}</Text>
+                <View className="flex-1">
+                  <Text className="text-base font-bold text-ink">{item.userName}</Text>
+                  <Text className="text-muted">{item.userEmail}</Text>
                 </View>
                 <Badge tone={APPLICATION_TONE[item.status]}>{STATUS_LABEL[item.status]}</Badge>
               </View>
-              <Text style={styles.muted}>Solicitó el {formatDate(item.createdAt)}</Text>
+              <Text className="text-muted">Solicitó el {formatDate(item.createdAt)}</Text>
               {item.status === 'pending' ? (
-                <View style={styles.rowActions}>
-                  <Button
-                    title={busyId === item.id ? '…' : 'Aprobar'}
-                    variant="primary"
-                    disabled={busyId !== null}
-                    onPress={() => void review(item.id, 'approve')}
-                  />
-                  <Button
-                    title={busyId === item.id ? '…' : 'Rechazar'}
-                    variant="danger"
-                    disabled={busyId !== null}
-                    onPress={() => void review(item.id, 'reject')}
-                  />
+                <View className="mt-2 flex-row gap-2">
+                  <View className="flex-1">
+                    <Button
+                      title={busyId === item.id ? '…' : 'Aprobar'}
+                      variant="primary"
+                      disabled={busyId !== null}
+                      onPress={() => void review(item.id, 'approve')}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Button
+                      title={busyId === item.id ? '…' : 'Rechazar'}
+                      variant="danger"
+                      disabled={busyId !== null}
+                      onPress={() => void review(item.id, 'reject')}
+                    />
+                  </View>
                 </View>
               ) : null}
             </View>
@@ -430,26 +539,20 @@ function UsersTab() {
   }
 
   return (
-    <View style={styles.body}>
-      <View style={styles.rowActions}>
-        <TextField
-          label="Buscar por nombre"
-          value={text}
-          onChangeText={(v) => {
-            setText(v);
-            setSearch(v);
-          }}
-          placeholder="Escribe…"
-        />
-      </View>
-      <View style={styles.chips}>
-        <Pressable style={[styles.chip, role === '' && styles.chipActive]} onPress={() => setRole('')}>
-          <Text style={[styles.chipText, role === '' && styles.chipTextActive]}>Todos</Text>
-        </Pressable>
+    <View className="flex-1">
+      <TextField
+        label="Buscar por nombre"
+        value={text}
+        onChangeText={(v) => {
+          setText(v);
+          setSearch(v);
+        }}
+        placeholder="Escribe…"
+      />
+      <View className="my-2 flex-row flex-wrap gap-2">
+        <Chip label="Todos" active={role === ''} onPress={() => setRole('')} />
         {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-          <Pressable key={r} style={[styles.chip, role === r && styles.chipActive]} onPress={() => setRole(r)}>
-            <Text style={[styles.chipText, role === r && styles.chipTextActive]}>{ROLE_LABEL[r]}</Text>
-          </Pressable>
+          <Chip key={r} label={ROLE_LABEL[r]} active={role === r} onPress={() => setRole(r)} />
         ))}
       </View>
       {error && <Alert kind="error">{error}</Alert>}
@@ -461,43 +564,46 @@ function UsersTab() {
         <FlatList
           data={items}
           keyExtractor={(u) => u.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ paddingBottom: 24 }}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.userRow}>
+            <View className="mb-2.5 gap-1.5 rounded-2xl border border-edge bg-white p-3.5">
+              <View className="flex-row items-center gap-2.5">
                 <Avatar name={item.name} />
-                <View style={styles.userInfo}>
-                  <Text style={styles.cardTitle}>{item.name}</Text>
-                  <Text style={styles.muted}>{item.email}</Text>
+                <View className="flex-1">
+                  <Text className="text-base font-bold text-ink">{item.name}</Text>
+                  <Text className="text-muted">{item.email}</Text>
                 </View>
                 <Badge tone={item.status === 'active' ? 'success' : 'danger'}>
                   {item.status === 'active' ? 'Activo' : 'Suspendido'}
                 </Badge>
               </View>
-              <View style={styles.chips}>
+              <View className="flex-row flex-wrap gap-2">
                 {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                  <Pressable
+                  <Chip
                     key={r}
-                    style={[styles.chip, item.role === r && styles.chipActive]}
+                    label={ROLE_LABEL[r]}
+                    active={item.role === r}
                     onPress={() => void patch(item.id, { role: r })}
-                  >
-                    <Text style={[styles.chipText, item.role === r && styles.chipTextActive]}>{ROLE_LABEL[r]}</Text>
-                  </Pressable>
+                  />
                 ))}
               </View>
-              <View style={styles.rowActions}>
-                <Button
-                  title={item.status === 'active' ? 'Suspender' : 'Activar'}
-                  variant={item.status === 'active' ? 'danger' : 'secondary'}
-                  disabled={busyId === item.id}
-                  onPress={() => void patch(item.id, { status: item.status === 'active' ? 'suspended' : 'active' })}
-                />
-                <Button
-                  title="Eliminar"
-                  variant="ghost"
-                  disabled={busyId === item.id}
-                  onPress={() => void remove(item)}
-                />
+              <View className="mt-2 flex-row flex-wrap gap-2">
+                <View className="flex-1">
+                  <Button
+                    title={item.status === 'active' ? 'Suspender' : 'Activar'}
+                    variant={item.status === 'active' ? 'danger' : 'secondary'}
+                    disabled={busyId === item.id}
+                    onPress={() => void patch(item.id, { status: item.status === 'active' ? 'suspended' : 'active' })}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Button
+                    title="Eliminar"
+                    variant="ghost"
+                    disabled={busyId === item.id}
+                    onPress={() => void remove(item)}
+                  />
+                </View>
               </View>
             </View>
           )}
@@ -584,12 +690,12 @@ function CategoriesTab() {
   }
 
   return (
-    <ScrollView style={styles.body} contentContainerStyle={styles.list}>
-      <Text style={styles.sectionTitle}>Nuevo tipo de negocio</Text>
+    <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+      <Text className="mb-1 mt-2 text-[15px] font-bold text-ink">Nuevo tipo de negocio</Text>
       <TextField label="Nombre" value={name} onChangeText={setName} placeholder="Ej. Panadería" />
       <Button title={busy ? 'Guardando…' : 'Crear tipo de negocio'} onPress={() => void createCategory()} disabled={busy} />
       {error && <Alert kind="error">{error}</Alert>}
-      <Text style={styles.sectionTitle}>Existentes</Text>
+      <Text className="mb-1 mt-2 text-[15px] font-bold text-ink">Existentes</Text>
       {loading ? (
         <Loading />
       ) : items.length === 0 ? (
@@ -599,38 +705,46 @@ function CategoriesTab() {
           .filter((c) => c.kind === 'negocio')
           .map((c) =>
             editing?.id === c.id ? (
-              <View key={c.id} style={styles.card}>
-                <Text style={styles.sectionTitle}>Editar tipo de negocio</Text>
+              <Card key={c.id} className="mt-2.5">
+                <Text className="mb-1 mt-2 text-[15px] font-bold text-ink">Editar tipo de negocio</Text>
                 <TextField label="Nombre" value={editName} onChangeText={setEditName} placeholder="Ej. Panadería" />
-                <View style={styles.rowActions}>
-                  <Button
-                    title={busy ? 'Guardando…' : 'Guardar'}
-                    variant="primary"
-                    disabled={busy || !editName.trim()}
-                    onPress={() => void saveEdit()}
-                  />
-                  <Button title="Cancelar" variant="ghost" disabled={busy} onPress={() => setEditing(null)} />
+                <View className="mt-2 flex-row gap-2">
+                  <View className="flex-1">
+                    <Button
+                      title={busy ? 'Guardando…' : 'Guardar'}
+                      variant="primary"
+                      disabled={busy || !editName.trim()}
+                      onPress={() => void saveEdit()}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Button title="Cancelar" variant="ghost" disabled={busy} onPress={() => setEditing(null)} />
+                  </View>
                 </View>
-              </View>
+              </Card>
             ) : (
-              <View key={c.id} style={styles.card}>
-                <View style={styles.cardTop}>
-                  <Text style={styles.cardTitle}>{c.name}</Text>
+              <Card key={c.id} className="mt-2.5">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-base font-bold text-ink">{c.name}</Text>
                   <Badge tone="success">Negocio</Badge>
                 </View>
-                <View style={styles.rowActions}>
-                  <Button
-                    title="Editar"
-                    variant="secondary"
-                    disabled={busy}
-                    onPress={() => {
-                      setEditing(c);
-                      setEditName(c.name);
-                    }}
-                  />
-                  <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+                <View className="mt-2 flex-row gap-2">
+                  <View className="flex-1">
+                    <Button
+                      title="Editar"
+                      variant="secondary"
+                      disabled={busy}
+                      onPress={() => {
+                        setEditing(c);
+                        setEditName(c.name);
+                      }}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+                  </View>
                 </View>
-              </View>
+              </Card>
             ),
           )
       )}
@@ -715,12 +829,12 @@ function ProductCategoriesTab() {
   }
 
   return (
-    <ScrollView style={styles.body} contentContainerStyle={styles.list}>
-      <Text style={styles.sectionTitle}>Nueva categoría de producto</Text>
+    <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+      <Text className="mb-1 mt-2 text-[15px] font-bold text-ink">Nueva categoría de producto</Text>
       <TextField label="Nombre" value={name} onChangeText={setName} placeholder="Ej. Frutas y Verduras" />
       <Button title={busy ? 'Guardando…' : 'Crear categoría de producto'} onPress={() => void createCategory()} disabled={busy} />
       {error && <Alert kind="error">{error}</Alert>}
-      <Text style={styles.sectionTitle}>Existentes</Text>
+      <Text className="mb-1 mt-2 text-[15px] font-bold text-ink">Existentes</Text>
       {loading ? (
         <Loading />
       ) : items.length === 0 ? (
@@ -728,38 +842,46 @@ function ProductCategoriesTab() {
       ) : (
         items.map((c) =>
           editing?.id === c.id ? (
-            <View key={c.id} style={styles.card}>
-              <Text style={styles.sectionTitle}>Editar categoría</Text>
+            <Card key={c.id} className="mt-2.5">
+              <Text className="mb-1 mt-2 text-[15px] font-bold text-ink">Editar categoría</Text>
               <TextField label="Nombre" value={editName} onChangeText={setEditName} placeholder="Ej. Frutas y Verduras" />
-              <View style={styles.rowActions}>
-                <Button
-                  title={busy ? 'Guardando…' : 'Guardar'}
-                  variant="primary"
-                  disabled={busy || !editName.trim()}
-                  onPress={() => void saveEdit()}
-                />
-                <Button title="Cancelar" variant="ghost" disabled={busy} onPress={() => setEditing(null)} />
+              <View className="mt-2 flex-row gap-2">
+                <View className="flex-1">
+                  <Button
+                    title={busy ? 'Guardando…' : 'Guardar'}
+                    variant="primary"
+                    disabled={busy || !editName.trim()}
+                    onPress={() => void saveEdit()}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Button title="Cancelar" variant="ghost" disabled={busy} onPress={() => setEditing(null)} />
+                </View>
               </View>
-            </View>
+            </Card>
           ) : (
-            <View key={c.id} style={styles.card}>
-              <View style={styles.cardTop}>
-                <Text style={styles.cardTitle}>{c.name}</Text>
+            <Card key={c.id} className="mt-2.5">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-bold text-ink">{c.name}</Text>
                 <Badge tone="neutral">Producto</Badge>
               </View>
-              <View style={styles.rowActions}>
-                <Button
-                  title="Editar"
-                  variant="secondary"
-                  disabled={busy}
-                  onPress={() => {
-                    setEditing(c);
-                    setEditName(c.name);
-                  }}
-                />
-                <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+              <View className="mt-2 flex-row gap-2">
+                <View className="flex-1">
+                  <Button
+                    title="Editar"
+                    variant="secondary"
+                    disabled={busy}
+                    onPress={() => {
+                      setEditing(c);
+                      setEditName(c.name);
+                    }}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Button title="Borrar" variant="danger" disabled={busy} onPress={() => void removeCategory(c.id)} />
+                </View>
               </View>
-            </View>
+            </Card>
           ),
         )
       )}
@@ -808,7 +930,7 @@ function BusinessesTab() {
   }
 
   return (
-    <View style={styles.body}>
+    <View className="flex-1">
       {error && <Alert kind="error">{error}</Alert>}
       {loading ? (
         <Loading />
@@ -818,23 +940,23 @@ function BusinessesTab() {
         <FlatList
           data={items}
           keyExtractor={(b) => b.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ paddingBottom: 24 }}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.userRow}>
+            <View className="mb-2.5 gap-1.5 rounded-2xl border border-edge bg-white p-3.5">
+              <View className="flex-row items-center gap-2.5">
                 <Avatar name={item.name} />
-                <View style={styles.userInfo}>
-                  <Text style={styles.cardTitle}>{item.name}</Text>
-                  {item.address ? <Text style={styles.muted}>{item.address}</Text> : null}
+                <View className="flex-1">
+                  <Text className="text-base font-bold text-ink">{item.name}</Text>
+                  {item.address ? <Text className="text-muted">{item.address}</Text> : null}
                 </View>
                 <Badge tone={item.active ? 'success' : 'neutral'}>
                   {item.active ? 'Activo' : 'Inactivo'}
                 </Badge>
               </View>
-              <Text style={styles.muted}>
+              <Text className="text-muted">
                 {item.ownerName} ({item.ownerEmail})
               </Text>
-              <Text style={styles.muted}>
+              <Text className="text-muted">
                 {item.itemsCount} producto{item.itemsCount === 1 ? '' : 's'}
               </Text>
               <Button
@@ -850,226 +972,3 @@ function BusinessesTab() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  tabs: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  tab: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  tabActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  tabText: {
-    color: COLORS.muted,
-    fontWeight: '600',
-  },
-  tabTextActive: {
-    color: '#fff',
-  },
-  body: {
-    flex: 1,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginVertical: 8,
-  },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-  },
-  chipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  chipText: {
-    color: COLORS.muted,
-    fontSize: 13,
-  },
-  chipTextActive: {
-    color: '#fff',
-  },
-  list: {
-    paddingBottom: 24,
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    gap: 6,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  muted: {
-    color: COLORS.muted,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  rowActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  adminHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginBottom: 8,
-  },
-  statContent: {
-    paddingBottom: 24,
-  },
-  statGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  statCard: {
-    flexBasis: '30%',
-    flexGrow: 1,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 12,
-    gap: 2,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.muted,
-  },
-  chart: {
-    marginTop: 18,
-  },
-  chartTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    color: COLORS.muted,
-  },
-  chartEmpty: {
-    color: COLORS.muted,
-    fontSize: 13,
-    marginTop: 6,
-  },
-  chartGroups: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 14,
-    marginTop: 8,
-  },
-  chartGroup: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  chartBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  barCol: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  barValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  chartBar: {
-    width: 24,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-  },
-  chartName: {
-    fontSize: 12,
-    color: COLORS.muted,
-    maxWidth: 76,
-  },
-  legend: {
-    flexDirection: 'row',
-    gap: 14,
-    marginTop: 6,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 3,
-  },
-  legendText: {
-    fontSize: 12,
-    color: COLORS.muted,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-});

@@ -147,4 +147,41 @@ describe('categorías de producto (nomenclador)', () => {
     });
     expect(remove.statusCode).toBe(404);
   });
+  it('solo el admin edita categorías de producto', async () => {
+    const producer = await createUser('Luis', 'luis@ejemplo.com', 'productor');
+    const [cat] = await db.insert(productCategories).values({ name: 'Verduras' }).returning();
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/product-categories/${cat.id}`,
+      headers: auth(producer.accessToken),
+      payload: { name: 'Hortalizas' },
+    });
+    expect(patch.statusCode).toBe(403);
+  });
+
+  it('no permite renombrar a una categoría de producto existente', async () => {
+    const admin = await createUser('Root', 'root@buenprecio.app', 'administrador');
+    await db.insert(productCategories).values({ name: 'Bebidas' });
+    const [target] = await db.insert(productCategories).values({ name: 'Abarrotes' }).returning();
+
+    const dup = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/product-categories/${target.id}`,
+      headers: auth(admin.accessToken),
+      payload: { name: 'Bebidas' },
+    });
+    expect(dup.statusCode).toBe(409);
+    expect(dup.json().message).toBe('La categoría de producto ya existe');
+  });
+
+  it('404 al editar una categoría de producto inexistente', async () => {
+    const admin = await createUser('Root', 'root@buenprecio.app', 'administrador');
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/product-categories/00000000-0000-0000-0000-000000000000`,
+      headers: auth(admin.accessToken),
+      payload: { name: 'Otra' },
+    });
+    expect(patch.statusCode).toBe(404);
+  });
 });
