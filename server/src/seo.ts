@@ -16,6 +16,8 @@ export type SeoView = {
   noindex?: boolean;
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const DEFAULT_ORG = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
@@ -65,12 +67,12 @@ export function seoViewForUrl(url: string): Promise<SeoView> {
   if (path === '/registro') return Promise.resolve(REGISTER_VIEW);
 
   const businessMatch = /^\/catalogo\/([0-9a-zA-Z-]+)$/.exec(path);
-  if (businessMatch) {
+  if (businessMatch && UUID_RE.test(businessMatch[1])) {
     return businessSeoView(businessMatch[1]);
   }
 
   const productMatch = /^\/productos\/([0-9a-zA-Z-]+)$/.exec(path);
-  if (productMatch) {
+  if (productMatch && UUID_RE.test(productMatch[1])) {
     return productSeoView(productMatch[1]);
   }
 
