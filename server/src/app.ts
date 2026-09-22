@@ -22,21 +22,21 @@ import { productCategoryRoutes } from './routes/product-categories.js';
 import { businessRoutes } from './routes/businesses.js';
 import { uploadRoutes } from './routes/uploads.js';
 
-const SPA_DIR = resolve(process.cwd(), '../web/dist');
+const SPA_DIR = resolve(process.cwd(), env.SPA_DIR ?? '../web/dist');
 
 export async function buildApp() {
   const app = Fastify({ logger: env.NODE_ENV !== 'test' });
 
   await app.register(cors, { origin: true });
   await app.register(jwt, { secret: env.JWT_SECRET });
-  await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
+  await app.register(multipart, { limits: { fileSize: 4 * 1024 * 1024, files: 1 } });
   await mkdir(UPLOADS_DIR, { recursive: true });
   await app.register(fastifyStatic, { root: UPLOADS_DIR, prefix: '/uploads/' });
 
   app.setErrorHandler((error: FastifyError, request, reply) => {
     const status = error.statusCode ?? 500;
     if (status === 413 || error.code === 'FST_REQ_FILE_TOO_LARGE') {
-      return reply.code(413).send({ message: 'El archivo es demasiado grande (máximo 5 MB)' });
+      return reply.code(413).send({ message: 'El archivo es demasiado grande (máximo 4 MB)' });
     }
     request.log.error(error);
     return reply.code(status).send({ message: error.message ?? 'Error inesperado' });

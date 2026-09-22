@@ -4,10 +4,11 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
+import { put } from '@vercel/blob';
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../middleware/auth.js';
 import { sendError } from '../lib/errors.js';
-import { UPLOADS_DIR } from '../uploads.js';
+import { BLOB_TOKEN, UPLOADS_DIR } from '../uploads.js';
 
 const pump = promisify(pipeline);
 
@@ -28,8 +29,16 @@ export async function uploadRoutes(app: FastifyInstance) {
     if (!ext) {
       return sendError(reply, 400, 'Solo se permiten imágenes (JPEG, PNG, WebP o GIF)');
     }
-    await mkdir(UPLOADS_DIR, { recursive: true });
     const name = `${randomUUID()}.${ext}`;
+    if (BLOB_TOKEN) {
+      const blob = await put(`uploads/${name}`, data.file, {
+        access: 'public',
+        contentType: data.mimetype,
+        addRandomSuffix: false,
+      });
+      return reply.code(201).send({ url: String(blob.url), name });
+    }
+    await mkdir(UPLOADS_DIR, { recursive: true });
     const filePath = join(UPLOADS_DIR, name);
     await pump(data.file, createWriteStream(filePath));
     const url = `/uploads/${name}`;

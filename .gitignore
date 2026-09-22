@@ -29,5 +29,7 @@ yarn-error.log*
 
 # Uploaded media
 uploads/
+# Vercel static copy for the serverless SPA/SEO handler
+api/_static/
 # Local tooling
 .freebuff/

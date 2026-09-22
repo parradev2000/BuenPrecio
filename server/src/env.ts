@@ -16,6 +16,9 @@ const envSchema = z.object({
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().min(8).optional(),
   UPLOADS_DIR: z.string().optional(),
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
+  SPA_DIR: z.string().optional(),
+  SITE_URL: z.string().url().optional(),
 });
 
 export const env = envSchema.parse(process.env);

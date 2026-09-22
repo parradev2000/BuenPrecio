@@ -1,0 +1,15 @@
+{
+  "framework": null,
+  "installCommand": "npm install",
+  "buildCommand": "npm run build:prod && node scripts/copy-vercel-static.mjs",
+  "outputDirectory": "web/dist",
+  "functions": {
+    "api/vercel.ts": {
+      "maxDuration": 60
+    }
+  },
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/api/vercel" }
+  ]
+}

@@ -1,9 +1,10 @@
 import { and, eq } from 'drizzle-orm';
 import { CURRENCY } from '@buenprecio/shared';
 import { db } from './db.js';
+import { env } from './env.js';
 import { businesses, businessItems } from './schema.js';
 
-export const SITE_URL = 'https://buenprecio.onrender.com';
+export const SITE_URL = env.SITE_URL ?? 'https://buenprecio.onrender.com';
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 export type SeoView = {

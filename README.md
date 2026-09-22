@@ -7,7 +7,7 @@ Este repositorio (v2) es un monorepo con una API REST en Fastify + PostgreSQL, u
 ## Estructura del monorepo
 
 ```
-├── api/                  API REST (Fastify, Drizzle ORM, PostgreSQL) + docker-compose.yml
+├── server/               API REST (Fastify, Drizzle ORM, PostgreSQL) + docker-compose.yml
 ├── web/                  Cliente web (Vite + React + react-router)
 ├── mobile/               App móvil (Expo SDK 57 + expo-router) + comando-apk.sh
 ├── packages/shared/      Schemas Zod y constantes compartidas (compila a dist/)
@@ -37,7 +37,7 @@ Este repositorio (v2) es un monorepo con una API REST en Fastify + PostgreSQL, u
 ### 1. Base de datos
 
 ```bash
-cd api && docker compose up -d
+cd server && docker compose up -d
 ```
 
 Levanta PostgreSQL 16 en el puerto `5433` (usuario/contraseña/db: `buenprecio`).
@@ -47,7 +47,7 @@ Levanta PostgreSQL 16 en el puerto `5433` (usuario/contraseña/db: `buenprecio`)
 Copia los ejemplos y edítalos según corresponda:
 
 ```bash
-cp api/.env.example api/.env
+cp server/.env.example server/.env
 ```
 
 | Variable | Descripción |
@@ -109,9 +109,9 @@ Escanea el QR con Expo Go. Para que el teléfono alcance la API, ajusta `apiBase
 | `npm run dev:api` | API con recarga automática (`tsx watch`) |
 | `npm run dev:web` | Vite dev server |
 | `npm run dev:mobile` | Expo start |
-| `npm run db:migrate` (en `api/`) | Aplica migraciones de Drizzle |
-| `npm run db:generate` (en `api/`) | Genera una migración desde el esquema |
-| `npm run seed:admin` (en `api/`) | Crea el administrador inicial |
+| `npm run db:migrate` (en `server/`) | Aplica migraciones de Drizzle |
+| `npm run db:generate` (en `server/`) | Genera una migración desde el esquema |
+| `npm run seed:admin` (en `server/`) | Crea el administrador inicial |
 | `npm test` | Tests del API (Vitest) |
 | `npm run typecheck` | Typecheck de todo el workspace |
 | `npm run lint` | ESLint de todo el workspace |
@@ -126,7 +126,7 @@ Credenciales de desarrollo por defecto: `admin@buenprecio.app` / `admin-cambiar-
 
 ## Subida de fotos
 
-`POST /api/v1/uploads` (autenticado, multipart) acepta `image/jpeg`, `image/png`, `image/webp` y `image/gif` con un máximo de 5 MB. Devuelve una ruta relativa (`/uploads/<uuid>.<ext>`) que se guarda en `photoUrl` del ítem; el API sirve la media estáticamente desde `UPLOADS_DIR` y el web la proxifica en `/uploads`. El esquema compartido acepta tanto rutas relativas como URLs absolutas.
+`POST /api/v1/uploads` (autenticado, multipart) acepta `image/jpeg`, `image/png`, `image/webp` y `image/gif` con un máximo de 4 MB. En producción con `BLOB_READ_WRITE_TOKEN` (Vercel) guarda en **Vercel Blob** y devuelve una URL absoluta; sin token, guarda en disco (`UPLOADS_DIR`) y devuelve una ruta relativa (`/uploads/<uuid>.<ext>`) que el API sirve estáticamente. El esquema compartido acepta tanto rutas relativas como URLs absolutas.
 
 ## Tests
 
