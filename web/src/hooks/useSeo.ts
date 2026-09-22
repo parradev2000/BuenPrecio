@@ -7,7 +7,7 @@ type SeoOptions = {
   url?: string;
 };
 
-const SITE_URL = 'https://buenprecio.onrender.com';
+const SITE_URL = 'https://buenprecio.vercel.app';
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 function setMeta(attr: 'name' | 'property', key: string, value: string) {

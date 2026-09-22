@@ -5,4 +5,4 @@ Disallow: /mi-cuenta
 Disallow: /mis-negocios
 Disallow: /admin
 
-Sitemap: https://buenprecio.onrender.com/sitemap.xml
+Sitemap: https://buenprecio.vercel.app/sitemap.xml
