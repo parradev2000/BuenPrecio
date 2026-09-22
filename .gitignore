@@ -33,3 +33,5 @@ uploads/
 api/_static/
 # Local tooling
 .freebuff/
+.vercel
+.env*

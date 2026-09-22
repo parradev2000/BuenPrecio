@@ -8,7 +8,7 @@ import { put } from '@vercel/blob';
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../middleware/auth.js';
 import { sendError } from '../lib/errors.js';
-import { BLOB_TOKEN, UPLOADS_DIR } from '../uploads.js';
+import { BLOB_TOKEN, USE_BLOB, UPLOADS_DIR } from '../uploads.js';
 
 const pump = promisify(pipeline);
 
@@ -30,7 +30,7 @@ export async function uploadRoutes(app: FastifyInstance) {
       return sendError(reply, 400, 'Solo se permiten imágenes (JPEG, PNG, WebP o GIF)');
     }
     const name = `${randomUUID()}.${ext}`;
-    if (BLOB_TOKEN) {
+    if (USE_BLOB || BLOB_TOKEN) {
       const blob = await put(`uploads/${name}`, data.file, {
         access: 'public',
         contentType: data.mimetype,

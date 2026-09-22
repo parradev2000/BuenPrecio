@@ -17,6 +17,7 @@ const envSchema = z.object({
   ADMIN_PASSWORD: z.string().min(8).optional(),
   UPLOADS_DIR: z.string().optional(),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
+  BLOB_STORE_ID: z.string().optional(),
   SPA_DIR: z.string().optional(),
   SITE_URL: z.string().url().optional(),
 });
