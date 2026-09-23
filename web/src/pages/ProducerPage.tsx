@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { App, Button, Select, Tag, Upload } from 'antd';
+import { App, Button, Image, Select, Tag, Upload } from 'antd';
 import { EnvironmentOutlined, UploadOutlined } from '@ant-design/icons';
 import { api } from '../api/client';
 import type { Business, Category } from '../api/types';
@@ -267,7 +267,7 @@ export function ProducerPage() {
                   </Button>
                 </Upload>
                 {!photoUploading && form.photoUrl && (
-                  <img
+                  <Image
                     src={form.photoUrl}
                     alt=""
                     className="h-14 w-14 rounded-lg border border-slate-200 object-cover"

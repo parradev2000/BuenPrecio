@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EnvironmentOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Image } from 'antd';
 import { api } from '../api/client';
 import type { CatalogProductDetail } from '../api/types';
 import { EmptyState, Loading } from '../components/ui';
@@ -48,10 +49,9 @@ export function ProductDetailPage() {
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2">
         {product.photoUrl && (
-          <img
+          <Image
             src={product.photoUrl}
             alt={product.name}
-            decoding="async"
             className="aspect-[4/3] w-full rounded-2xl border border-slate-200 bg-slate-100 object-cover"
           />
         )}
@@ -83,10 +83,9 @@ export function ProductDetailPage() {
       ) : (
         <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           {product.businessPhotoUrl && (
-            <img
+            <Image
               src={product.businessPhotoUrl}
               alt={product.businessName}
-              decoding="async"
               className="mb-4 aspect-[16/9] w-full rounded-xl border border-slate-200 bg-slate-100 object-cover"
             />
           )}

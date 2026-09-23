@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Input, Segmented, Select } from 'antd';
+import { Button, Image, Input, Segmented, Select } from 'antd';
 import { EnvironmentOutlined, SearchOutlined } from '@ant-design/icons';
 import { api } from '../api/client';
 import type { CatalogBusiness, CatalogProduct, Category, ProductCategory } from '../api/types';
@@ -186,12 +186,17 @@ function ProductsCatalog() {
                 className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
               >
                 {p.photoUrl && (
-                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
+                  <div
+                    className="aspect-[4/3] overflow-hidden bg-slate-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Image
                       src={p.photoUrl}
                       alt=""
-                      loading="lazy"
-                      decoding="async"
+                      rootClassName="h-full w-full"
+                      preview={{
+                        mask: 'Ver foto',
+                      }}
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                     />
                   </div>
@@ -323,12 +328,17 @@ function BusinessesCatalog() {
                 className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
               >
                 {b.photoUrl && (
-                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
+                  <div
+                    className="aspect-[4/3] overflow-hidden bg-slate-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Image
                       src={b.photoUrl}
                       alt=""
-                      loading="lazy"
-                      decoding="async"
+                      rootClassName="h-full w-full"
+                      preview={{
+                        mask: 'Ver foto',
+                      }}
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                     />
                   </div>

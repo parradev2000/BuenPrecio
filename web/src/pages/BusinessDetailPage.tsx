@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EnvironmentOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Image } from 'antd';
 import { api } from '../api/client';
 import type { CatalogBusinessDetail } from '../api/types';
 import { formatPrice } from '../lib/format';
@@ -38,10 +39,9 @@ export function BusinessDetailPage() {
       </Link>
 
       {business.photoUrl && (
-        <img
+        <Image
           src={business.photoUrl}
           alt={business.name}
-          decoding="async"
           className="mt-4 aspect-[16/9] w-full rounded-2xl border border-slate-200 bg-slate-100 object-cover"
         />
       )}
@@ -91,11 +91,9 @@ export function BusinessDetailPage() {
             >
               <div className="flex items-center gap-3">
                 {item.photoUrl && (
-                  <img
+                  <Image
                     src={item.photoUrl}
                     alt=""
-                    loading="lazy"
-                    decoding="async"
                     className="h-12 w-12 shrink-0 rounded-lg border border-slate-200 object-cover"
                   />
                 )}

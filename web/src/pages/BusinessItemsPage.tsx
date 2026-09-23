@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { App, Button, Popconfirm, Select, Tag, Upload } from 'antd';
+import { App, Button, Image, Popconfirm, Select, Tag, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { api } from '../api/client';
 import type { Business, BusinessItem, ItemType, ProductCategory } from '../api/types';
@@ -319,10 +319,9 @@ export function BusinessItemsPage() {
                 </Button>
               </Upload>
               {!photoUploading && form.photoUrl && (
-                <img
+                <Image
                   src={form.photoUrl}
                   alt=""
-                  decoding="async"
                   className="h-14 w-14 rounded-lg border border-slate-200 object-cover"
                 />
               )}
@@ -380,11 +379,9 @@ export function BusinessItemsPage() {
             >
               <div className="flex items-center gap-3">
                 {item.photoUrl && (
-                  <img
+                  <Image
                     src={item.photoUrl}
                     alt=""
-                    loading="lazy"
-                    decoding="async"
                     className="h-12 w-12 shrink-0 rounded-lg border border-slate-200 object-cover"
                   />
                 )}
