@@ -20,6 +20,7 @@ const envSchema = z.object({
   BLOB_STORE_ID: z.string().optional(),
   SPA_DIR: z.string().optional(),
   SITE_URL: z.string().url().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

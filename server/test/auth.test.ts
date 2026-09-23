@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
+import { TEST_DATABASE_URL } from './db-url.js';
 import { truncateAll } from './helpers.js';
 
 const BASE = '/api/v1';
@@ -221,6 +222,35 @@ describe('auth', () => {
       url: `${BASE}/auth/change-password`,
       headers: { authorization: 'Bearer token-invalido' },
       payload: { currentPassword: 'secreta123', newPassword: 'nueva-pass-8' },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('rechaza /auth/google sin idToken', async () => {
+    const res = await app.inject({ method: 'POST', url: `${BASE}/auth/google`, payload: {} });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('rechaza /auth/google con idToken basura', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/google`,
+      payload: { idToken: 'token-basura' },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('rechaza login por contraseña en cuenta creada con Google', async () => {
+    await registerUser(app);
+    const { default: postgres } = await import('postgres');
+    const sql = postgres(TEST_DATABASE_URL, { max: 1 });
+    await sql`update users set password_hash = null where email = 'ana@ejemplo.com'`;
+    await sql.end();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/login`,
+      payload: { email: 'ana@ejemplo.com', password: 'secreta123' },
     });
     expect(res.statusCode).toBe(401);
   });

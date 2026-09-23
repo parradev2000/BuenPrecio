@@ -6,6 +6,7 @@ import { zodError } from '../lib/zodError';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { Alert, Field } from '../components/ui';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { useSeo } from '../hooks/useSeo';
 
 export function LoginPage() {
@@ -13,13 +14,26 @@ export function LoginPage() {
     title: 'Entrar - Buen Precio',
     description: 'Inicia sesión en Buen Precio para gestionar tus negocios y catálogos.',
   });
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  async function onGoogle(idToken: string) {
+    setApiError(null);
+    setBusy(true);
+    try {
+      await googleLogin(idToken);
+      navigate('/');
+    } catch (error) {
+      setApiError(error instanceof ApiError ? error.message : 'No se pudo conectar');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -70,6 +84,12 @@ export function LoginPage() {
             Entrar
           </Button>
         </form>
+        <div className="mt-5 flex items-center gap-3 text-xs text-slate-400">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span>o continúa con</span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+        <GoogleSignInButton onSuccess={onGoogle} onError={setApiError} text="signin_with" />
         <p className="mt-5 text-center text-sm text-slate-500">
           ¿No tienes cuenta?{' '}
           <Link to="/registro" className="font-medium text-brand-700 hover:text-brand-800">

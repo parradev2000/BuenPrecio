@@ -35,10 +35,15 @@ export const changePasswordSchema = z
     path: ['newPassword'],
   });
 
+export const googleAuthSchema = z.object({
+  idToken: z.string().trim().min(1, 'Token de Google inválido').max(4096, 'Token de Google inválido'),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
 
 export type SafeUser = {
   id: string;

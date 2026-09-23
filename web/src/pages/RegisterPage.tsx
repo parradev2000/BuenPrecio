@@ -6,6 +6,7 @@ import { zodError } from '../lib/zodError';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { Alert, Field } from '../components/ui';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 import { useSeo } from '../hooks/useSeo';
 
 export function RegisterPage() {
@@ -14,7 +15,7 @@ export function RegisterPage() {
     description:
       'Crea tu cuenta gratuita en Buen Precio y publica tu negocio con su catálogo de productos y servicios.',
   });
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -23,6 +24,19 @@ export function RegisterPage() {
 
   function set(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function onGoogle(idToken: string) {
+    setApiError(null);
+    setBusy(true);
+    try {
+      await googleLogin(idToken);
+      navigate('/');
+    } catch (error) {
+      setApiError(error instanceof ApiError ? error.message : 'No se pudo conectar');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function onSubmit(e: FormEvent) {
@@ -82,6 +96,12 @@ export function RegisterPage() {
             Crear cuenta
           </Button>
         </form>
+        <div className="mt-5 flex items-center gap-3 text-xs text-slate-400">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span>o regístrate con</span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+        <GoogleSignInButton onSuccess={onGoogle} onError={setApiError} text="signup_with" />
         <p className="mt-5 text-center text-sm text-slate-500">
           ¿Ya tienes cuenta?{' '}
           <Link to="/entrar" className="font-medium text-brand-700 hover:text-brand-800">

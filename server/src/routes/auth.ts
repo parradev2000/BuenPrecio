@@ -1,8 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 import { and, eq, isNull } from 'drizzle-orm';
-import { changePasswordSchema, loginSchema, refreshSchema, registerSchema } from '@buenprecio/shared';
+import {
+  changePasswordSchema,
+  googleAuthSchema,
+  loginSchema,
+  refreshSchema,
+  registerSchema,
+} from '@buenprecio/shared';
 import { db } from '../db.js';
+import { env } from '../env.js';
 import { sendError } from '../lib/errors.js';
+import { verifyGoogleIdToken } from '../lib/google.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { toSafeUser } from '../lib/user.js';
 import {
@@ -51,6 +59,32 @@ export async function authRoutes(app: FastifyInstance) {
     return reply.code(201).send(await issueAuthResponse(app, user));
   });
 
+  app.post('/auth/google', async (request, reply) => {
+    const parsed = googleAuthSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
+    }
+    if (!env.GOOGLE_CLIENT_ID) {
+      return sendError(reply, 501, 'Iniciar sesión con Google no está configurado');
+    }
+    const claims = await verifyGoogleIdToken(parsed.data.idToken, env.GOOGLE_CLIENT_ID);
+    if (!claims) {
+      return sendError(reply, 401, 'No se pudo verificar la cuenta de Google');
+    }
+    const email = claims.email.toLowerCase();
+    let user = await db.query.users.findFirst({ where: eq(users.email, email) });
+    if (!user) {
+      [user] = await db
+        .insert(users)
+        .values({ name: claims.name ?? email, email, role: 'consumidor', passwordHash: null })
+        .returning();
+    }
+    if (user.status !== 'active') {
+      return sendError(reply, 403, 'Tu cuenta está suspendida');
+    }
+    return reply.send(await issueAuthResponse(app, user));
+  });
+
   app.post('/auth/login', async (request, reply) => {
     const parsed = loginSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -58,7 +92,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
     const { email, password } = parsed.data;
     const user = await db.query.users.findFirst({ where: eq(users.email, email.toLowerCase()) });
-    if (!user || !(await verifyPassword(password, user.passwordHash))) {
+    if (!user || !user.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
       return sendError(reply, 401, 'Correo o contraseña incorrectos');
     }
     if (user.status !== 'active') {
@@ -113,6 +147,9 @@ export async function authRoutes(app: FastifyInstance) {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
     if (!user) {
       return sendError(reply, 401, 'Usuario no encontrado');
+    }
+    if (!user.passwordHash) {
+      return sendError(reply, 400, 'Esta cuenta se creó con Google y no tiene contraseña');
     }
     if (!(await verifyPassword(currentPassword, user.passwordHash))) {
       return sendError(reply, 400, 'La contraseña actual no es correcta');
