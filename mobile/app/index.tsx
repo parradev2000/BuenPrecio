@@ -7,6 +7,7 @@ import { useAuth } from '../src/context/AuthContext';
 import { type LocationStatus, useUserLocation } from '../src/hooks/useUserLocation';
 import { COLORS, formatDistance, formatPrice, mediaUrl } from '../src/lib/format';
 import { EmptyState, Loading, Screen } from '../src/components/ui';
+import { PhotoLightbox } from '../src/components/PhotoLightbox';
 
 type CatalogView = 'productos' | 'negocios';
 
@@ -110,6 +111,7 @@ function ProductsCatalog() {
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [loading, setLoading] = useState(true);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const { status, coords, error, enable, disable } = useUserLocation();
 
   const load = useCallback(async () => {
@@ -186,11 +188,13 @@ function ProductsCatalog() {
                 </View>
                 <View className="flex-row items-center gap-2.5">
                   {item.photoUrl ? (
-                    <Image
-                      source={{ uri: mediaUrl(item.photoUrl) ?? '' }}
-                      className="rounded-lg"
-                      style={{ width: 56, height: 56 }}
-                    />
+                    <Pressable onPress={() => setPreviewUri(mediaUrl(item.photoUrl))}>
+                      <Image
+                        source={{ uri: mediaUrl(item.photoUrl) ?? '' }}
+                        className="rounded-lg"
+                        style={{ width: 56, height: 56 }}
+                      />
+                    </Pressable>
                   ) : null}
                   <View className="flex-1 gap-0.5">
                     <Text className="text-base font-bold text-ink">{item.name}</Text>
@@ -209,6 +213,7 @@ function ProductsCatalog() {
               </Pressable>
             )}
           />
+          <PhotoLightbox uri={previewUri} onClose={() => setPreviewUri(null)} />
         </>
       )}
     </>

@@ -6,12 +6,14 @@ import type { CatalogProductDetail } from '../../src/api/types';
 import { useUserLocation } from '../../src/hooks/useUserLocation';
 import { formatDistance, formatPrice, mediaUrl } from '../../src/lib/format';
 import { EmptyState, Loading, Screen } from '../../src/components/ui';
+import { PhotoLightbox } from '../../src/components/PhotoLightbox';
 
 export default function ProductDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [product, setProduct] = useState<CatalogProductDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const { status, coords } = useUserLocation();
 
   const load = useCallback(async () => {
@@ -65,11 +67,13 @@ export default function ProductDetailScreen() {
           <Text className="mb-2.5 text-muted">← Volver</Text>
         </Pressable>
         {product.photoUrl ? (
-          <Image
-            source={{ uri: mediaUrl(product.photoUrl) ?? '' }}
-            className="mb-3 w-full rounded-xl"
-            style={{ height: 220 }}
-          />
+          <Pressable onPress={() => setPreviewUri(mediaUrl(product.photoUrl))}>
+            <Image
+              source={{ uri: mediaUrl(product.photoUrl) ?? '' }}
+              className="mb-3 w-full rounded-xl"
+              style={{ height: 220 }}
+            />
+          </Pressable>
         ) : null}
         <Text className="mb-1.5 text-[22px] font-bold text-ink">{product.name}</Text>
         <View className="mb-2 flex-row gap-2">
@@ -89,11 +93,13 @@ export default function ProductDetailScreen() {
         <Text className="mb-2 mt-4 text-[17px] font-bold text-ink">Negocio</Text>
         <View className="gap-1.5 rounded-2xl border border-edge bg-white p-3.5">
           {product.businessPhotoUrl ? (
-            <Image
-              source={{ uri: mediaUrl(product.businessPhotoUrl) ?? '' }}
-              className="mb-1 w-full rounded-[10px]"
-              style={{ height: 120 }}
-            />
+            <Pressable onPress={() => setPreviewUri(mediaUrl(product.businessPhotoUrl))}>
+              <Image
+                source={{ uri: mediaUrl(product.businessPhotoUrl) ?? '' }}
+                className="mb-1 w-full rounded-[10px]"
+                style={{ height: 120 }}
+              />
+            </Pressable>
           ) : null}
           <Pressable onPress={() => router.push(`/business/${product.businessId}`)}>
             <Text className="text-[17px] font-bold text-brand-700">{product.businessName}</Text>
@@ -116,6 +122,7 @@ export default function ProductDetailScreen() {
 
         {!product.businessName && <EmptyState message="Este producto ya no está disponible." />}
       </ScrollView>
+      <PhotoLightbox uri={previewUri} onClose={() => setPreviewUri(null)} />
     </Screen>
   );
 }

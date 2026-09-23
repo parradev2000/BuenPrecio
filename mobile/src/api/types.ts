@@ -58,9 +58,10 @@ export type Business = {
   description: string | null;
   address: string | null;
   phone: string | null;
+  photoUrl: string | null;
   categoryId: string | null;
   categoryName: string | null;
-  latitude: number | null;
+  latitude: number | null; 
   longitude: number | null;
   active: boolean;
   itemsCount?: number;

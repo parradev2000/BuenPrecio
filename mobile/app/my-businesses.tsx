@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Image, Platform, Pressable, Text, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { api } from '../src/api/client';
 import type { Business, Category } from '../src/api/types';
 import { Alert, Button, Card, EmptyState, Loading, Screen, TextField } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
+import { mediaUrl } from '../src/lib/format';
 
 export default function MyBusinessesScreen() {
   const router = useRouter();
@@ -17,12 +19,17 @@ export default function MyBusinessesScreen() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Business | null>(null);
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [showNewCat, setShowNewCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [busy, setBusy] = useState(false);
   const [coords, setCoords] = useState<{ latitude?: number; longitude?: number }>({});
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,12 +54,17 @@ export default function MyBusinessesScreen() {
 
   function resetForm() {
     setName('');
+    setDescription('');
     setAddress('');
+    setPhone('');
     setCategoryId('');
     setCoords({});
     setShowNewCat(false);
     setNewCatName('');
     setEditing(null);
+    setPhotoUrl('');
+    setPhotoPreview(null);
+    setPhotoUploading(false);
   }
 
   function toggleForm() {
@@ -69,20 +81,29 @@ export default function MyBusinessesScreen() {
   function startEdit(b: Business) {
     setEditing(b);
     setName(b.name);
+    setDescription(b.description ?? '');
     setAddress(b.address ?? '');
+    setPhone(b.phone ?? '');
     setCategoryId(b.categoryId ?? '');
     setCoords({ latitude: b.latitude ?? undefined, longitude: b.longitude ?? undefined });
     setShowNewCat(false);
     setError(null);
     setShowForm(true);
+    setPhotoUrl(b.photoUrl ?? '');
+    setPhotoPreview(null);
+    setPhotoUploading(false);
   }
 
   async function saveBusiness() {
     setBusy(true);
     setError(null);
     try {
-      const body: Record<string, string | number> = { name };
+      const body: Record<string, unknown> = { name };
+      if (description || editing) body.description = description;
       if (address || editing) body.address = address;
+      if (phone || editing) body.phone = phone;
+      if (photoUrl.trim()) body.photoUrl = photoUrl.trim();
+      else if (editing) body.photoUrl = null;
       if (categoryId) body.categoryId = categoryId;
       if (coords.latitude !== undefined) body.latitude = coords.latitude;
       if (coords.longitude !== undefined) body.longitude = coords.longitude;
@@ -149,6 +170,50 @@ export default function MyBusinessesScreen() {
     }
   }
 
+  async function pickPhoto() {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setError('Necesitas permitir el acceso a la galería para subir fotos');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.7,
+      });
+      if (result.canceled) {
+        return;
+      }
+      const asset = result.assets[0];
+      if (asset.fileSize != null && asset.fileSize > 5 * 1024 * 1024) {
+        setError('El archivo es demasiado grande (máximo 5 MB)');
+        return;
+      }
+      setPhotoPreview(asset.uri);
+      setPhotoUploading(true);
+      setError(null);
+      const form = new FormData();
+      if (Platform.OS === 'web') {
+        const blob = await (await fetch(asset.uri)).blob();
+        form.append('file', blob, asset.fileName ?? 'negocio.jpg');
+      } else {
+        form.append('file', {
+          uri: asset.uri,
+          name: asset.fileName ?? 'negocio.jpg',
+          type: asset.mimeType ?? 'image/jpeg',
+        } as unknown as Blob);
+      }
+      const res = await api<{ url: string }>('/uploads', { method: 'POST', body: form, auth: true });
+      setPhotoUrl(res.url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo subir la foto');
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
+
   if (!session) {
     return <Redirect href="/login" />;
   }
@@ -184,14 +249,60 @@ export default function MyBusinessesScreen() {
           <Text className="text-base font-bold text-ink">
             {editing ? 'Editar negocio' : 'Nuevo negocio'}
           </Text>
+          {photoUrl.trim() ? (
+            <Image
+              source={{ uri: mediaUrl(photoUrl) ?? '' }}
+              className="w-full rounded-[10px] border border-edge"
+              style={{ height: 140 }}
+            />
+          ) : null}
           <TextField label="Nombre *" value={name} onChangeText={setName} />
+          <TextField label="Descripción" value={description} onChangeText={setDescription} maxLength={500} />
           <TextField label="Dirección" value={address} onChangeText={setAddress} />
+          <TextField
+            label="Teléfono"
+            value={phone}
+            onChangeText={setPhone}
+            maxLength={30}
+            keyboardType="phone-pad"
+          />
           <Button title="Usar mi ubicación (GPS)" variant="secondary" onPress={() => void locateMe()} />
           {(coords.latitude !== undefined || coords.longitude !== undefined) && (
             <Text className="text-sm text-muted">
               Ubicación fijada ({coords.latitude?.toFixed(4)}, {coords.longitude?.toFixed(4)})
             </Text>
           )}
+          <Text className="mt-1 text-[13px] font-semibold text-muted">Foto del negocio</Text>
+          <View className="mb-1 gap-2.5">
+            <Pressable
+              className={`self-start rounded-xl bg-brand-600 px-3.5 py-2.5 active:opacity-70 ${
+                photoUploading ? 'opacity-60' : ''
+              }`}
+              onPress={() => void pickPhoto()}
+              disabled={photoUploading}
+            >
+              <Text className="font-bold text-white">
+                {photoUploading ? 'Subiendo…' : 'Seleccionar foto'}
+              </Text>
+            </Pressable>
+            {photoUrl.trim() || photoPreview ? (
+              <View className="flex-row items-center gap-3">
+                <Image
+                  source={{ uri: photoPreview ?? mediaUrl(photoUrl) ?? '' }}
+                  className="rounded-[10px] border border-edge"
+                  style={{ width: 88, height: 66 }}
+                />
+                <Pressable
+                  onPress={() => {
+                    setPhotoUrl('');
+                    setPhotoPreview(null);
+                  }}
+                >
+                  <Text className="font-semibold text-red-600">Quitar</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
           <Text className="mt-1 text-[13px] font-semibold text-muted">Tipo de negocio</Text>
           <View className="flex-row flex-wrap gap-2">
             {chipOptions.map((option) => {
@@ -273,7 +384,16 @@ export default function MyBusinessesScreen() {
                   </Text>
                 </View>
               </View>
+              {item.photoUrl ? (
+                <Image
+                  source={{ uri: mediaUrl(item.photoUrl) ?? '' }}
+                  className="w-full rounded-[10px] border border-edge"
+                  style={{ height: 120 }}
+                />
+              ) : null}
+              {item.description ? <Text className="text-muted">{item.description}</Text> : null}
               {item.address ? <Text className="text-muted">{item.address}</Text> : null}
+              {item.phone ? <Text className="text-muted">☎️ {item.phone}</Text> : null}
               <Text className="text-muted">
                 {item.itemsCount ?? 0} producto{item.itemsCount === 1 ? '' : 's'}
               </Text>

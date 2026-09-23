@@ -29,6 +29,7 @@
     "extra": {
       "apiBase": "http://192.168.149.84:3000/api/v1",
       "apiHost": "192.168.149.84",
+      "googleClientId": "530153807375-biium9goisvc7odemmbh3vdstio5j3ea.apps.googleusercontent.com",
       "eas": {
         "projectId": "95fb696a-90e5-403a-8fac-fd8c738705cc"
       }

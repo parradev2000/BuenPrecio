@@ -7,6 +7,7 @@ import type { Business, BusinessItem, ItemType, ProductCategory } from '../../sr
 import { Alert, Button, Card, EmptyState, Loading, Screen, TextField } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
 import { formatPrice, mediaUrl } from '../../src/lib/format';
+import { PhotoLightbox } from '../../src/components/PhotoLightbox';
 
 const ITEM_UNITS = ['unidad', 'kg', 'litro', 'paquete'] as const;
 
@@ -41,6 +42,7 @@ export default function BusinessItemsScreen() {
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState('');
   const [newCategoryOpen, setNewCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -291,11 +293,13 @@ export default function BusinessItemsScreen() {
             </Pressable>
             {photoUrl.trim() || photoPreview ? (
               <View className="flex-row items-center gap-3">
-                <Image
-                  source={{ uri: photoPreview ?? mediaUrl(photoUrl) ?? '' }}
-                  className="rounded-[10px] border border-edge"
-                  style={{ width: 72, height: 72 }}
-                />
+                <Pressable onPress={() => photoPreview ? setPreviewUri(photoPreview) : setPreviewUri(mediaUrl(photoUrl))}>
+                  <Image
+                    source={{ uri: photoPreview ?? mediaUrl(photoUrl) ?? '' }}
+                    className="rounded-[10px] border border-edge"
+                    style={{ width: 72, height: 72 }}
+                  />
+                </Pressable>
                 <Pressable
                   onPress={() => {
                     setPhotoUrl('');
@@ -332,11 +336,13 @@ export default function BusinessItemsScreen() {
             >
               <View className={item.photoUrl ? 'shrink flex-row items-center gap-2.5' : 'shrink gap-0.5'}>
                 {item.photoUrl ? (
-                  <Image
-                    source={{ uri: mediaUrl(item.photoUrl) ?? '' }}
-                    className="rounded-lg"
-                    style={{ width: 52, height: 52 }}
-                  />
+                  <Pressable onPress={() => setPreviewUri(mediaUrl(item.photoUrl))}>
+                    <Image
+                      source={{ uri: mediaUrl(item.photoUrl) ?? '' }}
+                      className="rounded-lg"
+                      style={{ width: 52, height: 52 }}
+                    />
+                  </Pressable>
                 ) : null}
                 <View className="shrink">
                   <Text className="text-base font-semibold text-ink">{item.name}</Text>
@@ -367,6 +373,7 @@ export default function BusinessItemsScreen() {
           )}
         />
       )}
+      <PhotoLightbox uri={previewUri} onClose={() => setPreviewUri(null)} />
     </Screen>
   );
 }

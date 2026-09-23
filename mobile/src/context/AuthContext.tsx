@@ -15,6 +15,7 @@ type AuthContextValue = {
   session: Session | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -41,6 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(next);
   }
 
+  async function googleLogin(idToken: string) {
+    const data = await api<AuthResponse>('/auth/google', { method: 'POST', body: { idToken } });
+    const next = toSession(data);
+    await saveSession(next);
+    setSession(next);
+  }
+
   async function logout() {
     try {
       if (session) {
@@ -53,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }
 
-  return <AuthContext.Provider value={{ session, login, register, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ session, login, register, googleLogin, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
