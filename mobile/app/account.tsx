@@ -146,15 +146,6 @@ export default function AccountScreen() {
         )}
 
         <Card className="mb-3">
-          <Text className="text-base font-bold text-ink">Servidor</Text>
-          <Text className="text-sm text-muted">
-            ¿La app no se conecta? Cambia aquí la dirección de la API (por si cambió la IP de tu red)
-            sin recompilar.
-          </Text>
-          <Button title="Configurar servidor" onPress={() => router.push('/servidor')} />
-        </Card>
-
-        <Card className="mb-3">
           <Text className="text-base font-bold text-ink">Contáctanos</Text>
           <Text className="text-sm text-muted">Información del desarrollador y dueño de la aplicación.</Text>
           <Button variant="secondary" title="Ver contacto" onPress={() => router.push('/contact')} />

@@ -1,5 +1,5 @@
 import type { AuthResponse } from '@buenprecio/shared';
-import { getApiBase } from '../config';
+import { API_BASE } from '../config';
 import { clearSession, loadSession, saveSession, type Session } from './session';
 
 export class ApiError extends Error {
@@ -25,7 +25,7 @@ async function rawRequest(path: string, init: RequestInit, session: Session | nu
   if (session) {
     headers.authorization = `Bearer ${session.accessToken}`;
   }
-  const res = await fetch(getApiBase() + path, { ...init, headers });
+  const res = await fetch(API_BASE + path, { ...init, headers });
   if (res.status === 204) {
     return null;
   }
@@ -64,7 +64,7 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
 
 async function tryRefresh(refreshToken: string): Promise<Session | null> {
   try {
-    const res = await fetch(getApiBase() + '/auth/refresh', {
+    const res = await fetch(API_BASE + '/auth/refresh', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
