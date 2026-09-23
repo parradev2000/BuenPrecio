@@ -188,7 +188,10 @@ function ProductsCatalog() {
                 {p.photoUrl && (
                   <div
                     className="aspect-[4/3] overflow-hidden bg-slate-100"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                   >
                     <Image
                       src={p.photoUrl}
@@ -330,7 +333,10 @@ function BusinessesCatalog() {
                 {b.photoUrl && (
                   <div
                     className="aspect-[4/3] overflow-hidden bg-slate-100"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                   >
                     <Image
                       src={b.photoUrl}
