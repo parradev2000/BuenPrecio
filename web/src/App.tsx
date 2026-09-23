@@ -9,6 +9,8 @@ import { ContactPage } from './pages/ContactPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ProducerPage } from './pages/ProducerPage';
 import { BusinessItemsPage } from './pages/BusinessItemsPage';
@@ -36,6 +38,22 @@ export function Router() {
           element={
             <GuestOnly>
               <RegisterPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/olvide-contrasena"
+          element={
+            <GuestOnly>
+              <ForgotPasswordPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/restablecer-contrasena"
+          element={
+            <GuestOnly>
+              <ResetPasswordPage />
             </GuestOnly>
           }
         />

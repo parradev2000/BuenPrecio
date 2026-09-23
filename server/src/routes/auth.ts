@@ -2,25 +2,30 @@ import type { FastifyInstance } from 'fastify';
 import { and, eq, isNull } from 'drizzle-orm';
 import {
   changePasswordSchema,
+  forgotPasswordSchema,
   googleAuthSchema,
   loginSchema,
   refreshSchema,
   registerSchema,
+  resetPasswordSchema,
 } from '@buenprecio/shared';
 import { db } from '../db.js';
 import { env } from '../env.js';
 import { sendError } from '../lib/errors.js';
 import { verifyGoogleIdToken } from '../lib/google.js';
+import { isSmtpConfigured, sendPasswordResetEmail } from '../lib/mail.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { toSafeUser } from '../lib/user.js';
 import {
   ACCESS_TOKEN_TTL_SECONDS,
   generateRefreshToken,
+  generateResetToken,
   hashToken,
   refreshExpiryInMs,
+  resetExpiryInMs,
 } from '../lib/tokens.js';
 import { authenticate } from '../middleware/auth.js';
-import { refreshTokens, users, type User } from '../schema.js';
+import { passwordResets, refreshTokens, users, type User } from '../schema.js';
 
 async function issueAuthResponse(app: FastifyInstance, user: User) {
   const accessToken = app.jwt.sign({ sub: user.id }, { expiresIn: ACCESS_TOKEN_TTL_SECONDS });
@@ -167,5 +172,59 @@ export async function authRoutes(app: FastifyInstance) {
 
   app.get('/auth/me', { preHandler: authenticate }, async (request) => {
     return { user: toSafeUser(request.currentUser!) };
+  });
+
+  app.post('/auth/forgot-password', async (request, reply) => {
+    const parsed = forgotPasswordSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
+    }
+    if (!isSmtpConfigured()) {
+      return sendError(reply, 501, 'Recuperación de contraseña no está configurada');
+    }
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, parsed.data.email.toLowerCase()),
+    });
+    if (user && user.status === 'active') {
+      await db
+        .update(passwordResets)
+        .set({ usedAt: new Date() })
+        .where(and(eq(passwordResets.userId, user.id), isNull(passwordResets.usedAt)));
+      const token = generateResetToken();
+      await db.insert(passwordResets).values({
+        userId: user.id,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(resetExpiryInMs()),
+      });
+      await sendPasswordResetEmail(user.email, user.name, token);
+    }
+    return reply.code(204).send();
+  });
+
+  app.post('/auth/reset-password', async (request, reply) => {
+    const parsed = resetPasswordSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendError(reply, 400, parsed.error.issues[0]?.message ?? 'Datos inválidos');
+    }
+    const reset = await db.query.passwordResets.findFirst({
+      where: and(eq(passwordResets.tokenHash, hashToken(parsed.data.token)), isNull(passwordResets.usedAt)),
+      with: { user: true },
+    });
+    if (!reset || reset.expiresAt.getTime() < Date.now()) {
+      return sendError(reply, 400, 'El enlace de restablecimiento no es válido o ha expirado');
+    }
+    if (reset.user.status !== 'active') {
+      return sendError(reply, 403, 'Tu cuenta está suspendida');
+    }
+    await db
+      .update(users)
+      .set({ passwordHash: await hashPassword(parsed.data.password), updatedAt: new Date() })
+      .where(eq(users.id, reset.userId));
+    await db.update(passwordResets).set({ usedAt: new Date() }).where(eq(passwordResets.id, reset.id));
+    await db
+      .update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(refreshTokens.userId, reset.userId), isNull(refreshTokens.revokedAt)));
+    return reply.code(204).send();
   });
 }

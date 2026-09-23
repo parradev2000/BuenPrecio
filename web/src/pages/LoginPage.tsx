@@ -80,6 +80,11 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             error={errors.password}
           />
+          <div className="mb-3 text-right text-sm">
+            <Link to="/olvide-contrasena" className="text-slate-500 hover:text-brand-700">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
           <Button type="primary" htmlType="submit" block loading={busy} className="mt-2">
             Entrar
           </Button>

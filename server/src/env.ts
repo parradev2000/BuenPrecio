@@ -21,6 +21,11 @@ const envSchema = z.object({
   SPA_DIR: z.string().optional(),
   SITE_URL: z.string().url().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

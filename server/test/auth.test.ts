@@ -1,8 +1,14 @@
 import type { FastifyInstance } from 'fastify';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../src/app.js';
+import { sendPasswordResetEmail } from '../src/lib/mail.js';
 import { TEST_DATABASE_URL } from './db-url.js';
 import { truncateAll } from './helpers.js';
+
+vi.mock('../src/lib/mail.js', () => ({
+  isSmtpConfigured: () => true,
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+}));
 
 const BASE = '/api/v1';
 
@@ -14,6 +20,7 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
+  vi.mocked(sendPasswordResetEmail).mockClear();
   await truncateAll(app);
 });
 
@@ -253,5 +260,117 @@ describe('auth', () => {
       payload: { email: 'ana@ejemplo.com', password: 'secreta123' },
     });
     expect(res.statusCode).toBe(401);
+  });
+
+  it('solicita recuperación y restablece la contraseña', async () => {
+    const reg = await registerUser(app);
+    const { refreshToken } = reg.json();
+
+    const forgot = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/forgot-password`,
+      payload: { email: 'ana@ejemplo.com' },
+    });
+    expect(forgot.statusCode).toBe(204);
+    expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+    const token = vi.mocked(sendPasswordResetEmail).mock.calls[0][2];
+    expect(token).toBeTruthy();
+
+    const reset = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/reset-password`,
+      payload: { token, password: 'nueva-pass-8' },
+    });
+    expect(reset.statusCode).toBe(204);
+
+    const loginOld = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/login`,
+      payload: { email: 'ana@ejemplo.com', password: 'secreta123' },
+    });
+    expect(loginOld.statusCode).toBe(401);
+
+    const loginNew = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/login`,
+      payload: { email: 'ana@ejemplo.com', password: 'nueva-pass-8' },
+    });
+    expect(loginNew.statusCode).toBe(200);
+
+    const refresh = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/refresh`,
+      payload: { refreshToken },
+    });
+    expect(refresh.statusCode).toBe(401);
+  });
+
+  it('no reutiliza el token de restablecimiento', async () => {
+    await registerUser(app);
+    await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/forgot-password`,
+      payload: { email: 'ana@ejemplo.com' },
+    });
+    const token = vi.mocked(sendPasswordResetEmail).mock.calls[0][2];
+
+    const first = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/reset-password`,
+      payload: { token, password: 'nueva-pass-8' },
+    });
+    expect(first.statusCode).toBe(204);
+
+    const reuse = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/reset-password`,
+      payload: { token, password: 'otra-pass-99' },
+    });
+    expect(reuse.statusCode).toBe(400);
+  });
+
+  it('responde 204 en forgot-password aunque el correo no exista', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/forgot-password`,
+      payload: { email: 'nadie@ejemplo.com' },
+    });
+    expect(res.statusCode).toBe(204);
+    expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  it('rechaza reset-password con token inválido', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/reset-password`,
+      payload: { token: 'token-basura', password: 'nueva-pass-8' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('rechaza forgot-password con email inválido', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/forgot-password`,
+      payload: { email: 'no-es-un-correo' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('rechaza reset-password con contraseña corta', async () => {
+    await registerUser(app);
+    await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/forgot-password`,
+      payload: { email: 'ana@ejemplo.com' },
+    });
+    const token = vi.mocked(sendPasswordResetEmail).mock.calls[0][2];
+    const res = await app.inject({
+      method: 'POST',
+      url: `${BASE}/auth/reset-password`,
+      payload: { token, password: 'corta' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toMatch(/8 caracteres/);
   });
 });

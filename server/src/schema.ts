@@ -154,6 +154,25 @@ export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
   user: one(users, { fields: [refreshTokens.userId], references: [users.id] }),
 }));
 
+export const passwordResets = pgTable(
+  'password_resets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('password_resets_hash_idx').on(table.tokenHash)],
+);
+
+export const passwordResetsRelations = relations(passwordResets, ({ one }) => ({
+  user: one(users, { fields: [passwordResets.userId], references: [users.id] }),
+}));
+
 export const businessesRelations = relations(businesses, ({ one, many }) => ({
   owner: one(users, { fields: [businesses.ownerId], references: [users.id] }),
   category: one(categories, { fields: [businesses.categoryId], references: [categories.id] }),

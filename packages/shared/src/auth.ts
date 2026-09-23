@@ -39,11 +39,25 @@ export const googleAuthSchema = z.object({
   idToken: z.string().trim().min(1, 'Token de Google inválido').max(4096, 'Token de Google inválido'),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.email('Correo inválido'),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(1, 'Enlace de restablecimiento inválido').max(255, 'Enlace de restablecimiento inválido'),
+  password: z
+    .string()
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+    .max(72, 'La contraseña no puede superar 72 caracteres'),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export type SafeUser = {
   id: string;

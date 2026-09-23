@@ -58,6 +58,21 @@ const REGISTER_VIEW: SeoView = {
   jsonLd: DEFAULT_ORG,
 };
 
+const FORGOT_PASSWORD_VIEW: SeoView = {
+  title: 'Recuperar contraseña - Buen Precio',
+  description: 'Solicita un enlace para restablecer tu contraseña de Buen Precio.',
+  url: `${SITE_URL}/olvide-contrasena`,
+  jsonLd: DEFAULT_ORG,
+};
+
+const RESET_PASSWORD_VIEW: SeoView = {
+  title: 'Restablecer contraseña - Buen Precio',
+  description: 'Elige una nueva contraseña para tu cuenta de Buen Precio.',
+  url: `${SITE_URL}/restablecer-contrasena`,
+  jsonLd: DEFAULT_ORG,
+  noindex: true,
+};
+
 export function seoViewForUrl(url: string): Promise<SeoView> {
   const path = url.split('?')[0];
 
@@ -65,6 +80,8 @@ export function seoViewForUrl(url: string): Promise<SeoView> {
   if (path === '/catalogo') return Promise.resolve(CATALOG_VIEW);
   if (path === '/entrar') return Promise.resolve(LOGIN_VIEW);
   if (path === '/registro') return Promise.resolve(REGISTER_VIEW);
+  if (path === '/olvide-contrasena') return Promise.resolve(FORGOT_PASSWORD_VIEW);
+  if (path === '/restablecer-contrasena') return Promise.resolve(RESET_PASSWORD_VIEW);
 
   const businessMatch = /^\/catalogo\/([0-9a-zA-Z-]+)$/.exec(path);
   if (businessMatch && UUID_RE.test(businessMatch[1])) {

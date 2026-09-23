@@ -8,6 +8,7 @@ export async function truncateAll(app: FastifyInstance) {
     truncate table
       price_reports,
       refresh_tokens,
+      password_resets,
       business_items,
       businesses,
       producer_applications,
