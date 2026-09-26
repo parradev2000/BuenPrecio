@@ -18,7 +18,7 @@ export function Field({ label, error, ...rest }: FieldProps) {
     <label className="mb-3 block">
       <span className="mb-1 block text-sm font-medium text-slate-600">{label}</span>
       <Input status={error ? 'error' : undefined} {...rest} />
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-red-600 dark:text-red-400">{error}</span>}
     </label>
   );
 }

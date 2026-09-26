@@ -6,6 +6,8 @@ export const photoUrlSchema = z
   .max(500, 'Foto demasiado larga')
   .refine((value) => /^(https?:\/\/|\/)/i.test(value), 'URL de foto inválida');
 
+export const phoneSchema = z.string().trim().min(1, 'Escribe el teléfono').max(30, 'El teléfono no puede superar 30 caracteres');
+
 export const createBusinessSchema = z.object({
   name: z
     .string()
@@ -16,6 +18,13 @@ export const createBusinessSchema = z.object({
   categoryId: z.string().uuid('Tipo de negocio inválido').optional(),
   address: z.string().trim().max(300, 'La dirección no puede superar 300 caracteres').optional(),
   phone: z.string().trim().max(30, 'El teléfono no puede superar 30 caracteres').optional(),
+  phones: z.array(phoneSchema).max(10, 'Máximo 10 teléfonos').optional(),
+  email: z
+    .string()
+    .trim()
+    .email('Correo inválido')
+    .max(200, 'El correo no puede superar 200 caracteres')
+    .nullish(),
   latitude: z.number().min(-90, 'Latitud inválida').max(90, 'Latitud inválida').optional(),
   longitude: z.number().min(-180, 'Longitud inválida').max(180, 'Longitud inválida').optional(),
   photoUrl: photoUrlSchema.optional(),

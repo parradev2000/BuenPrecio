@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { App, Button, Image, Select, Tag, Upload } from 'antd';
+import { App, Button, Image, Input, Select, Tag, Upload } from 'antd';
 import { EnvironmentOutlined, UploadOutlined } from '@ant-design/icons';
 import { api } from '../api/client';
 import type { Business, Category } from '../api/types';
@@ -25,7 +25,8 @@ export function ProducerPage() {
     name: '',
     description: '',
     address: '',
-    phone: '',
+    email: '',
+    phones: [''],
     categoryId: '',
     photoUrl: '',
   });
@@ -59,11 +60,23 @@ export function ProducerPage() {
     }
   }
 
-  function set(key: keyof typeof form, value: string) {
+  function set(key: Exclude<keyof typeof form, 'phones'>, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  const EMPTY_FORM = { name: '', description: '', address: '', phone: '', categoryId: '', photoUrl: '' };
+  function setPhone(index: number, value: string) {
+    setForm((prev) => ({ ...prev, phones: prev.phones.map((p, i) => (i === index ? value : p)) }));
+  }
+
+  function addPhone() {
+    setForm((prev) => ({ ...prev, phones: [...prev.phones, ''] }));
+  }
+
+  function removePhone(index: number) {
+    setForm((prev) => ({ ...prev, phones: prev.phones.filter((_, i) => i !== index) }));
+  }
+
+  const EMPTY_FORM = { name: '', description: '', address: '', email: '', phones: [''] as string[], categoryId: '', photoUrl: '' };
 
   function resetForm() {
     setForm(EMPTY_FORM);
@@ -86,7 +99,8 @@ export function ProducerPage() {
       name: business.name,
       description: business.description ?? '',
       address: business.address ?? '',
-      phone: business.phone ?? '',
+      email: business.email ?? '',
+      phones: (business.phones?.length ? business.phones : business.phone ? [business.phone] : ['']).slice(0, 10),
       categoryId: business.categoryId ?? '',
       photoUrl: business.photoUrl ?? '',
     });
@@ -106,10 +120,13 @@ export function ProducerPage() {
     setBusy(true);
     setFormError(null);
     try {
-      const body: Record<string, string | number> = { name: form.name };
+      const body: Record<string, unknown> = { name: form.name };
       if (form.description || editing) body.description = form.description;
       if (form.address || editing) body.address = form.address;
-      if (form.phone || editing) body.phone = form.phone;
+      const phones = form.phones.map((p) => p.trim()).filter(Boolean).slice(0, 10);
+      if (editing || phones.length > 0) body.phones = phones;
+      if (editing) body.email = form.email.trim() || null;
+      else if (form.email.trim()) body.email = form.email.trim();
       if (form.categoryId) body.categoryId = form.categoryId;
       if (form.photoUrl.trim()) body.photoUrl = form.photoUrl.trim();
       if (coords.latitude !== undefined) body.latitude = coords.latitude;
@@ -230,7 +247,7 @@ export function ProducerPage() {
       {showForm && (
         <form
           onSubmit={saveBusiness}
-          className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+          className="mt-4 rounded-2xl border border-slate-200 bg-white dark:bg-surface p-5 shadow-sm sm:p-6"
         >
           <h2 className="text-lg font-semibold text-slate-900">
             {editing ? 'Editar negocio' : 'Nuevo negocio'}
@@ -307,11 +324,39 @@ export function ProducerPage() {
               </div>
             )}
 
+            <div className="mb-3">
+              <span className="mb-1 block text-sm font-medium text-slate-600">Teléfonos</span>
+              <div className="flex flex-col gap-2">
+                {form.phones.map((phone, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      className="flex-1"
+                      value={phone}
+                      onChange={(e) => setPhone(index, e.target.value)}
+                      maxLength={30}
+                      placeholder={`Teléfono ${index + 1}`}
+                    />
+                    {form.phones.length > 1 && (
+                      <Button size="small" type="text" onClick={() => removePhone(index)}>
+                        Quitar
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {form.phones.length < 10 && (
+                <Button size="small" className="mt-2" onClick={addPhone}>
+                  + Otro teléfono
+                </Button>
+              )}
+            </div>
+
             <Field
-              label="Teléfono"
-              value={form.phone}
-              onChange={(e) => set('phone', e.target.value)}
-              maxLength={30}
+              label="Correo (opcional)"
+              value={form.email}
+              onChange={(e) => set('email', e.target.value)}
+              maxLength={200}
+              placeholder="negocio@correo.com"
             />
 
             <div className="mb-3">
@@ -383,7 +428,7 @@ export function ProducerPage() {
           {businesses.map((b) => (
             <div
               key={b.id}
-              className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+              className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white dark:bg-surface p-4 shadow-sm"
             >
               <div>
                 <Tag color={b.active ? 'green' : 'default'}>{b.active ? 'Activo' : 'Desactivado'}</Tag>

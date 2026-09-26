@@ -29,7 +29,7 @@ export function ContactPage() {
         </p>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white dark:bg-surface p-5 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold text-slate-900">Desarrollador</h2>
         <div className="mt-2 divide-y divide-slate-100">
           <InfoRow label="Nombre">
@@ -38,14 +38,14 @@ export function ContactPage() {
           <InfoRow label="Rol">
             <span className="inline-flex items-center gap-2">
               {DEV.role}
-              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+              <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">
                 {DEV.handle}
               </span>
             </span>
           </InfoRow>
           <InfoRow label="Correo">
             <a
-              className="inline-flex items-center gap-1.5 font-medium text-brand-700 hover:text-brand-800"
+              className="inline-flex items-center gap-1.5 font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300"
               href={`mailto:${DEV.email}`}
             >
               <MailOutlined /> {DEV.email}
@@ -53,7 +53,7 @@ export function ContactPage() {
           </InfoRow>
           <InfoRow label="Teléfono">
             <a
-              className="inline-flex items-center gap-1.5 font-medium text-brand-700 hover:text-brand-800"
+              className="inline-flex items-center gap-1.5 font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300"
               href={DEV.phoneHref}
             >
               <PhoneOutlined /> {DEV.phone}

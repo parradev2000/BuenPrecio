@@ -1,4 +1,7 @@
 import type { ThemeConfig } from 'antd';
+import { theme } from 'antd';
+
+type ColorScheme = 'light' | 'dark';
 
 /**
  * Design tokens for the modern Buen Precio redesign.
@@ -35,10 +38,18 @@ export const palette = {
   warningFg: '#b45309',
 };
 
+const darkPalette = {
+  ink: '#f1f5f9',
+  muted: '#94a3b8',
+  surface: '#111827',
+  bg: '#0b1220',
+  border: '#1e293b',
+};
+
 export const FONT_FAMILY =
   "'Inter Variable', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
-export const antdTheme: ThemeConfig = {
+const LIGHT_ANTD_THEME: ThemeConfig = {
   token: {
     colorPrimary: palette.brand[600],
     colorInfo: palette.brand[600],
@@ -69,3 +80,44 @@ export const antdTheme: ThemeConfig = {
     },
   },
 };
+
+export const antdTheme = LIGHT_ANTD_THEME;
+
+export function antdThemeFor(scheme: ColorScheme): ThemeConfig {
+  if (scheme !== 'dark') {
+    return LIGHT_ANTD_THEME;
+  }
+  return {
+    algorithm: theme.darkAlgorithm,
+    token: {
+      colorPrimary: palette.brand[500],
+      colorInfo: palette.brand[500],
+      colorSuccess: palette.brand[500],
+      colorWarning: palette.accent[400],
+      colorError: '#f87171',
+      colorTextBase: darkPalette.ink,
+      colorBgBase: darkPalette.bg,
+      borderRadius: 10,
+      fontFamily: FONT_FAMILY,
+      fontSize: 14,
+    },
+    components: {
+      Layout: {
+        headerBg: darkPalette.surface,
+        headerHeight: 60,
+        headerPadding: '0 16px',
+        bodyBg: darkPalette.bg,
+        footerBg: darkPalette.surface,
+      },
+      Menu: {
+        itemBg: 'transparent',
+      },
+      Card: {
+        borderRadiusLG: 14,
+      },
+      Table: {
+        headerBg: darkPalette.bg,
+      },
+    },
+  };
+}

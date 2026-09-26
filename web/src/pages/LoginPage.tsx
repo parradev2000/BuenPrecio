@@ -57,7 +57,7 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <div className="rounded-2xl border border-slate-200 bg-white dark:bg-surface p-6 shadow-sm sm:p-8">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">Entrar</h1>
         {apiError && (
           <div className="mt-4">
@@ -81,7 +81,7 @@ export function LoginPage() {
             error={errors.password}
           />
           <div className="mb-3 text-right text-sm">
-            <Link to="/olvide-contrasena" className="text-slate-500 hover:text-brand-700">
+            <Link to="/olvide-contrasena" className="text-slate-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-400">
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
@@ -97,7 +97,7 @@ export function LoginPage() {
         <GoogleSignInButton onSuccess={onGoogle} onError={setApiError} text="signin_with" />
         <p className="mt-5 text-center text-sm text-slate-500">
           ¿No tienes cuenta?{' '}
-          <Link to="/registro" className="font-medium text-brand-700 hover:text-brand-800">
+          <Link to="/registro" className="font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300">
             Crea una gratis
           </Link>
         </p>

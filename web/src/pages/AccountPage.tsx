@@ -14,7 +14,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 function SectionCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-2xl border border-slate-200 bg-white dark:bg-surface p-5 shadow-sm sm:p-6">
       <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
@@ -93,7 +93,7 @@ export function AccountPage() {
       <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Mi cuenta</h1>
 
       {session && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="rounded-2xl border border-slate-200 bg-white dark:bg-surface p-5 shadow-sm sm:p-6">
           <p className="text-lg font-semibold text-slate-900">{session.user.name}</p>
           <p className="text-sm text-slate-500">{session.user.email}</p>
           <p className="mt-3 text-sm text-slate-600">
@@ -129,7 +129,7 @@ export function AccountPage() {
                 {application.status === 'approved' && (
                   <p className="text-sm text-slate-500">
                     Ya eres productor. Ve a{' '}
-                    <Link to="/mis-negocios" className="font-medium text-brand-700">
+                    <Link to="/mis-negocios" className="font-medium text-brand-700 dark:text-brand-400">
                       Mis negocios
                     </Link>
                     .
@@ -144,7 +144,7 @@ export function AccountPage() {
       {roleLabel === 'Productor' && (
         <p className="text-sm text-slate-600">
           Gestiona tus negocios en{' '}
-          <Link to="/mis-negocios" className="font-medium text-brand-700">
+          <Link to="/mis-negocios" className="font-medium text-brand-700 dark:text-brand-400">
             Mis negocios
           </Link>
           .
@@ -154,7 +154,7 @@ export function AccountPage() {
       {roleLabel === 'Administrador' && (
         <p className="text-sm text-slate-600">
           Administra la plataforma en{' '}
-          <Link to="/admin" className="font-medium text-brand-700">
+          <Link to="/admin" className="font-medium text-brand-700 dark:text-brand-400">
             Administración
           </Link>
           .

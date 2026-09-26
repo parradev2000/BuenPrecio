@@ -47,7 +47,7 @@ export function HomePage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/catalogo">
-              <Button size="large" className="border-0! bg-white! font-semibold! text-brand-700!">
+              <Button size="large" className="border-0! bg-white! dark:bg-surface! font-semibold! text-brand-700! dark:text-brand-400!">
                 Explorar catálogo
               </Button>
             </Link>
@@ -66,9 +66,9 @@ export function HomePage() {
         {FEATURES.map((feature) => (
           <div
             key={feature.title}
-            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="rounded-2xl border border-slate-200 bg-white dark:bg-surface p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-xl text-brand-700">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-500/15 text-xl text-brand-700 dark:text-brand-400">
               {feature.icon}
             </span>
             <h2 className="mt-4 text-lg font-semibold text-slate-900">{feature.title}</h2>

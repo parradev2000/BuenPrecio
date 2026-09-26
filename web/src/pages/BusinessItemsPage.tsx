@@ -181,7 +181,7 @@ export function BusinessItemsPage() {
     return <Loading />;
   }
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="text-sm text-red-600 dark:text-red-400">{error}</p>;
   }
   if (!business) {
     return <EmptyState message="Negocio no encontrado." />;
@@ -189,7 +189,7 @@ export function BusinessItemsPage() {
 
   return (
     <div>
-      <Link to="/mis-negocios" className="text-sm font-medium text-brand-700 hover:text-brand-800">
+      <Link to="/mis-negocios" className="text-sm font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300">
         ← Volver a mis negocios
       </Link>
       <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -204,7 +204,7 @@ export function BusinessItemsPage() {
 
       <form
         onSubmit={addItem}
-        className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+        className="mt-5 rounded-2xl border border-slate-200 bg-white dark:bg-surface p-5 shadow-sm sm:p-6"
       >
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">
@@ -371,7 +371,7 @@ export function BusinessItemsPage() {
         />
       )}
       {items.length > 0 && (
-        <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:bg-surface shadow-sm">
           {items.map((item) => (
             <li
               key={item.id}
@@ -395,7 +395,7 @@ export function BusinessItemsPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <span className="font-bold text-brand-700">{formatPrice(item.price)}</span>
+                <span className="font-bold text-brand-700 dark:text-brand-400">{formatPrice(item.price)}</span>
                 <Button size="small" onClick={() => startEdit(item)}>
                   Editar
                 </Button>

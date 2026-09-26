@@ -40,7 +40,7 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <div className="rounded-2xl border border-slate-200 bg-white dark:bg-surface p-6 shadow-sm sm:p-8">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">Recuperar contraseña</h1>
         {apiError && (
           <div className="mt-4">
@@ -72,7 +72,7 @@ export function ForgotPasswordPage() {
           </form>
         )}
         <p className="mt-5 text-center text-sm text-slate-500">
-          <Link to="/entrar" className="font-medium text-brand-700 hover:text-brand-800">
+          <Link to="/entrar" className="font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300">
             Volver a entrar
           </Link>
         </p>

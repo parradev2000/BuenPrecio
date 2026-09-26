@@ -164,7 +164,7 @@ export function DashboardSection() {
               <StatBlock
                 title="Productos"
                 value={stats.totals.products}
-                color="#0f172a"
+                color="var(--color-ink)"
                 icon={<ShoppingOutlined />}
               />
             </Col>

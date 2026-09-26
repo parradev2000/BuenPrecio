@@ -133,7 +133,7 @@ function ProductsCatalog() {
       </div>
 
       {status === 'idle' && (
-        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-900 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-brand-100 dark:border-brand-500/30 bg-brand-50 dark:bg-brand-500/15 px-4 py-3 text-sm text-brand-900 dark:text-brand-300 sm:flex-row sm:items-center sm:justify-between">
           <span>Activa tu ubicación para ver primero los productos más cercanos a ti.</span>
           <Button type="primary" size="small" onClick={enable}>
             Activar ubicación
@@ -141,14 +141,14 @@ function ProductsCatalog() {
         </div>
       )}
       {status === 'asking' && (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white dark:bg-surface px-4 py-3 text-sm text-slate-600">
           Obteniendo tu ubicación…
         </div>
       )}
       {status === 'enabled' && (
-        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white dark:bg-surface px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <span className="inline-flex items-center gap-1.5">
-            <EnvironmentOutlined className="text-brand-600" />
+            <EnvironmentOutlined className="text-brand-600 dark:text-brand-400" />
             Ordenando por cercanía a tu ubicación.
           </span>
           <Button type="text" size="small" onClick={disable}>
@@ -156,8 +156,8 @@ function ProductsCatalog() {
           </Button>
         </div>
       )}
-      {locationError && <p className="mt-3 text-sm text-red-600">{locationError}</p>}
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {locationError && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{locationError}</p>}
+      {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {!loading && !error && (products.length > 0 || search || categoryId) && (
         <p className="mt-4 text-sm text-slate-500">
@@ -183,7 +183,7 @@ function ProductsCatalog() {
               <Link
                 key={p.id}
                 to={`/productos/${p.id}`}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:bg-surface shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 dark:hover:border-brand-500/40 hover:shadow-md"
               >
                 {p.photoUrl && (
                   <div
@@ -206,7 +206,7 @@ function ProductsCatalog() {
                 )}
                 <div className="flex flex-1 flex-col gap-2 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+                    <span className="inline-flex items-center rounded-full bg-brand-50 dark:bg-brand-500/15 px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">
                       {p.categoryName ?? 'General'}
                     </span>
                     {p.distanceKm != null && (
@@ -214,7 +214,7 @@ function ProductsCatalog() {
                     )}
                   </div>
                   <h2 className="text-base font-semibold text-slate-900">{p.name}</h2>
-                  <p className="text-lg font-bold text-brand-700">
+                  <p className="text-lg font-bold text-brand-700 dark:text-brand-400">
                     {formatPrice(p.price)}
                     {p.unit && <span className="text-sm font-normal text-slate-500"> / {p.unit}</span>}
                   </p>
@@ -305,7 +305,7 @@ function BusinessesCatalog() {
         />
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
       {!loading && businesses.length === 0 && (
         <EmptyState
           message={
@@ -328,7 +328,7 @@ function BusinessesCatalog() {
               <Link
                 key={b.id}
                 to={`/catalogo/${b.id}`}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:bg-surface shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 dark:hover:border-brand-500/40 hover:shadow-md"
               >
                 {b.photoUrl && (
                   <div
@@ -351,7 +351,7 @@ function BusinessesCatalog() {
                 )}
                 <div className="flex flex-1 flex-col gap-2 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+                    <span className="inline-flex items-center rounded-full bg-brand-50 dark:bg-brand-500/15 px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">
                       {b.categoryName ?? 'General'}
                     </span>
                     <span className="text-xs text-slate-500">

@@ -35,7 +35,7 @@ export function ProductDetailPage() {
   });
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="text-sm text-red-600 dark:text-red-400">{error}</p>;
   }
   if (!product) {
     return <Loading />;
@@ -43,7 +43,7 @@ export function ProductDetailPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link to="/catalogo" className="text-sm font-medium text-brand-700 hover:text-brand-800">
+      <Link to="/catalogo" className="text-sm font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300">
         ← Volver al catálogo
       </Link>
 
@@ -60,14 +60,14 @@ export function ProductDetailPage() {
             {product.name}
           </h1>
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+            <span className="inline-flex items-center rounded-full bg-brand-50 dark:bg-brand-500/15 px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">
               {product.categoryName ?? 'General'}
             </span>
             <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
               {product.type === 'servicio' ? 'servicio' : product.unit ?? 'unidad'}
             </span>
           </div>
-          <p className="mt-4 text-3xl font-extrabold text-brand-700">{formatPrice(product.price)}</p>
+          <p className="mt-4 text-3xl font-extrabold text-brand-700 dark:text-brand-400">{formatPrice(product.price)}</p>
           {product.distanceKm != null && (
             <p className="mt-1 text-sm text-slate-500">
               📍 A {formatDistance(product.distanceKm)} de ti
@@ -81,7 +81,7 @@ export function ProductDetailPage() {
       {!product.businessName ? (
         <EmptyState message="Este producto ya no está disponible." />
       ) : (
-        <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-white dark:bg-surface p-4 shadow-sm sm:p-6">
           {product.businessPhotoUrl && (
             <Image
               src={product.businessPhotoUrl}
@@ -90,14 +90,14 @@ export function ProductDetailPage() {
             />
           )}
           <h3 className="text-lg font-semibold">
-            <Link to={`/catalogo/${product.businessId}`} className="text-slate-900 hover:text-brand-700">
+            <Link to={`/catalogo/${product.businessId}`} className="text-slate-900 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-400">
               {product.businessName}
             </Link>
           </h3>
           {product.businessAddress && (
             <p className="mt-2 text-sm text-slate-500">
               <a
-                className="inline-flex items-center gap-1.5 hover:text-brand-700"
+                className="inline-flex items-center gap-1.5 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-400"
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
                   product.businessLatitude && product.businessLongitude
                     ? `${product.businessLatitude},${product.businessLongitude}`
@@ -113,7 +113,7 @@ export function ProductDetailPage() {
           {product.businessPhone && (
             <p className="mt-1 text-sm text-slate-500">
               <a
-                className="inline-flex items-center gap-1.5 hover:text-brand-700"
+                className="inline-flex items-center gap-1.5 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-400"
                 href={`tel:${product.businessPhone.replace(/[^+\d]/g, '')}`}
               >
                 <PhoneOutlined /> {product.businessPhone}

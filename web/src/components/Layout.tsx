@@ -1,8 +1,18 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, Button, Drawer, Dropdown, Layout as AntLayout, Menu, type MenuProps } from 'antd';
-import { LogoutOutlined, MenuOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  DesktopOutlined,
+  LogoutOutlined,
+  MenuOutlined,
+  MoonOutlined,
+  SunOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+
+type ThemePreference = 'light' | 'dark' | 'system';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -15,6 +25,7 @@ const { Header, Content, Footer } = AntLayout;
 
 export function Layout() {
   const { session, logout } = useAuth();
+  const { preference, scheme, setPreference } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -71,6 +82,16 @@ export function Layout() {
     },
   };
 
+  const themeMenu: MenuProps = {
+    items: [
+      { key: 'light', icon: <SunOutlined />, label: 'Claro' },
+      { key: 'dark', icon: <MoonOutlined />, label: 'Oscuro' },
+      { key: 'system', icon: <DesktopOutlined />, label: 'Del sistema' },
+    ],
+    selectedKeys: [preference],
+    onClick: ({ key }) => setPreference(key as ThemePreference),
+  };
+
   return (
     <AntLayout className="min-h-screen">
       <Header className="sticky top-0 z-50 flex items-center border-b border-slate-200 !px-0">
@@ -91,6 +112,13 @@ export function Layout() {
           />
 
           <div className="flex items-center gap-2">
+            <Dropdown menu={themeMenu} trigger={['click']} placement="bottomRight">
+              <Button
+                type="text"
+                icon={scheme === 'dark' ? <MoonOutlined /> : <SunOutlined />}
+                aria-label="Cambiar tema"
+              />
+            </Dropdown>
             {session ? (
               <Dropdown menu={userMenu} trigger={['click']} placement="bottomRight">
                 <button
@@ -127,7 +155,7 @@ export function Layout() {
       <Footer className="border-t border-slate-200 !px-4">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 text-sm text-slate-500 sm:flex-row">
           <span>© 2026 BuenPrecio · Todos los derechos reservados · @ParraDEV</span>
-          <Link to="/contacto" className="text-brand-700 hover:text-brand-800">
+          <Link to="/contacto" className="text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300">
             Contáctanos
           </Link>
         </div>

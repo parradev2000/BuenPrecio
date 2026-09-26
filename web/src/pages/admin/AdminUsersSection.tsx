@@ -80,7 +80,7 @@ export function AdminUsersSection() {
       key: 'user',
       render: (_, u) => (
         <span className="flex items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-700">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-500/15 text-sm font-semibold text-brand-700 dark:text-brand-400">
             {initials(u.name)}
           </span>
           <span className="flex flex-col">

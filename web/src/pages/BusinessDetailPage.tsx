@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { EnvironmentOutlined, PhoneOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { Image } from 'antd';
 import { api } from '../api/client';
 import type { CatalogBusinessDetail } from '../api/types';
@@ -26,7 +26,7 @@ export function BusinessDetailPage() {
   });
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="text-sm text-red-600 dark:text-red-400">{error}</p>;
   }
   if (!business) {
     return <Loading />;
@@ -34,7 +34,7 @@ export function BusinessDetailPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link to="/catalogo" className="text-sm font-medium text-brand-700 hover:text-brand-800">
+      <Link to="/catalogo" className="text-sm font-medium text-brand-700 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300">
         ← Volver al catálogo
       </Link>
 
@@ -54,7 +54,7 @@ export function BusinessDetailPage() {
       {business.address && (
         <p className="mt-2 text-sm text-slate-500">
           <a
-            className="inline-flex items-center gap-1.5 hover:text-brand-700"
+            className="inline-flex items-center gap-1.5 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-400"
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
               business.latitude && business.longitude
                 ? `${business.latitude},${business.longitude}`
@@ -67,13 +67,25 @@ export function BusinessDetailPage() {
           </a>
         </p>
       )}
-      {business.phone && (
+      {(business.phones?.length ? business.phones : business.phone ? [business.phone] : []).map(
+        (phone, index) => (
+          <p key={index} className="mt-1 text-sm text-slate-500">
+            <a
+              className="inline-flex items-center gap-1.5 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-400"
+              href={`tel:${phone.replace(/[^+\d]/g, '')}`}
+            >
+              <PhoneOutlined /> {phone}
+            </a>
+          </p>
+        ),
+      )}
+      {business.email && (
         <p className="mt-1 text-sm text-slate-500">
           <a
-            className="inline-flex items-center gap-1.5 hover:text-brand-700"
-            href={`tel:${business.phone.replace(/[^+\d]/g, '')}`}
+            className="inline-flex items-center gap-1.5 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-400"
+            href={`mailto:${business.email}`}
           >
-            <PhoneOutlined /> {business.phone}
+            <MailOutlined /> {business.email}
           </a>
         </p>
       )}
@@ -83,7 +95,7 @@ export function BusinessDetailPage() {
         <EmptyState message="Este negocio aún no tiene productos publicados." />
       )}
       {business.items.length > 0 && (
-        <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:bg-surface shadow-sm">
           {business.items.map((item) => (
             <li
               key={item.id}
@@ -107,7 +119,7 @@ export function BusinessDetailPage() {
                   {item.description && <p className="text-sm text-slate-500">{item.description}</p>}
                 </div>
               </div>
-              <div className="text-base font-bold text-brand-700 sm:text-right">
+              <div className="text-base font-bold text-brand-700 dark:text-brand-400 sm:text-right">
                 {formatPrice(item.price)}
               </div>
             </li>
