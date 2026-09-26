@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { and, asc, count, eq, ilike, inArray, sql } from 'drizzle-orm';
-import { businessItems, businesses, categories, productCategories } from '../schema.js';
+import { businessItems, businessPhones, businesses, categories, productCategories } from '../schema.js';
 import { db } from '../db.js';
 import { sendError } from '../lib/errors.js';
 
@@ -168,6 +168,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         description: businesses.description,
         address: businesses.address,
         phone: businesses.phone,
+        email: businesses.email,
         photoUrl: businesses.photoUrl,
         latitude: businesses.latitude,
         longitude: businesses.longitude,
@@ -181,6 +182,16 @@ export async function catalogRoutes(app: FastifyInstance) {
     if (!business) {
       return sendError(reply, 404, 'Negocio no encontrado');
     }
+
+    const phoneRows = await db
+      .select({ phone: businessPhones.phone, position: businessPhones.position })
+      .from(businessPhones)
+      .where(eq(businessPhones.businessId, id));
+    const phones = phoneRows.length
+      ? phoneRows.sort((a, b) => a.position - b.position).map((row) => row.phone).filter(Boolean)
+      : business.phone
+        ? [business.phone]
+        : [];
 
     const itemRows = await db
       .select({
@@ -199,6 +210,6 @@ export async function catalogRoutes(app: FastifyInstance) {
       .where(and(eq(businessItems.businessId, id), eq(businessItems.available, true)))
       .orderBy(businessItems.name);
 
-    return { business: { ...business, items: itemRows } };
+    return { business: { ...business, phones, items: itemRows } };
   });
 }

@@ -218,6 +218,95 @@ describe('negocios (productor)', () => {
     expect(catalogOn.json().items).toHaveLength(1);
   });
 
+  it('guarda varios teléfonos y correo, y los expone en la ficha', async () => {
+    const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const create = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses`,
+      headers: auth(producer.accessToken),
+      payload: { name: 'Tienda', phones: ['5551111', '5552222'], email: 'tienda@ejemplo.com' },
+    });
+    expect(create.statusCode).toBe(201);
+    expect(create.json().business.phone).toBe('5551111');
+    const id = create.json().business.id;
+
+    const list = await app.inject({
+      method: 'GET',
+      url: `${BASE}/my/businesses`,
+      headers: auth(producer.accessToken),
+    });
+    expect(list.json().items[0].phones).toEqual(['5551111', '5552222']);
+    expect(list.json().items[0].email).toBe('tienda@ejemplo.com');
+
+    const detail = await app.inject({
+      method: 'GET',
+      url: `${BASE}/businesses/${id}`,
+      headers: auth(producer.accessToken),
+    });
+    expect(detail.json().business.phones).toEqual(['5551111', '5552222']);
+    expect(detail.json().business.email).toBe('tienda@ejemplo.com');
+
+    const catalog = await app.inject({ method: 'GET', url: `${BASE}/catalog/businesses/${id}` });
+    expect(catalog.json().business.phones).toEqual(['5551111', '5552222']);
+    expect(catalog.json().business.email).toBe('tienda@ejemplo.com');
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/businesses/${id}`,
+      headers: auth(producer.accessToken),
+      payload: { phones: ['9999999'], email: null },
+    });
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json().business.phone).toBe('9999999');
+    expect(patch.json().business.email).toBeNull();
+
+    const after = await app.inject({
+      method: 'GET',
+      url: `${BASE}/my/businesses`,
+      headers: auth(producer.accessToken),
+    });
+    expect(after.json().items[0].phones).toEqual(['9999999']);
+    expect(after.json().items[0].email).toBeNull();
+  });
+
+  it('limpia los teléfonos y correo al enviarlos vacíos', async () => {
+    const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const create = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses`,
+      headers: auth(producer.accessToken),
+      payload: { name: 'Tienda', phones: ['5551111'], email: 'tienda@ejemplo.com' },
+    });
+    const id = create.json().business.id;
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `${BASE}/businesses/${id}`,
+      headers: auth(producer.accessToken),
+      payload: { phones: [], email: null },
+    });
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json().business.phone).toBeNull();
+
+    const detail = await app.inject({
+      method: 'GET',
+      url: `${BASE}/catalog/businesses/${id}`,
+    });
+    expect(detail.json().business.phones).toEqual([]);
+    expect(detail.json().business.email).toBeNull();
+  });
+
+  it('valida el correo del negocio', async () => {
+    const producer = await createProducer('Luis', 'luis@ejemplo.com');
+    const res = await app.inject({
+      method: 'POST',
+      url: `${BASE}/businesses`,
+      headers: auth(producer.accessToken),
+      payload: { name: 'Tienda', email: 'correo-inválido' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
   it('valida categoría de negocio', async () => {
     const producer = await createProducer('Luis', 'luis@ejemplo.com');
     const [itemCategory] = await db

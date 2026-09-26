@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import {
   boolean,
   index,
+  integer,
   numeric,
   pgEnum,
   pgTable,
@@ -77,6 +78,7 @@ export const businesses = pgTable(
     categoryId: uuid('category_id').references(() => categories.id),
     address: text('address'),
     phone: text('phone'),
+    email: text('email'),
     latitude: numeric('latitude', { precision: 10, scale: 7, mode: 'number' }),
     longitude: numeric('longitude', { precision: 10, scale: 7, mode: 'number' }),
     photoUrl: text('photo_url'),
@@ -85,6 +87,19 @@ export const businesses = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('businesses_owner_idx').on(table.ownerId)],
+);
+
+export const businessPhones = pgTable(
+  'business_phones',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    businessId: uuid('business_id')
+      .notNull()
+      .references(() => businesses.id, { onDelete: 'cascade' }),
+    phone: text('phone').notNull(),
+    position: integer('position').notNull().default(0),
+  },
+  (table) => [index('business_phones_business_idx').on(table.businessId)],
 );
 
 export const businessItems = pgTable(
@@ -177,6 +192,11 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
   owner: one(users, { fields: [businesses.ownerId], references: [users.id] }),
   category: one(categories, { fields: [businesses.categoryId], references: [categories.id] }),
   items: many(businessItems),
+  phones: many(businessPhones),
+}));
+
+export const businessPhonesRelations = relations(businessPhones, ({ one }) => ({
+  business: one(businesses, { fields: [businessPhones.businessId], references: [businesses.id] }),
 }));
 
 export const businessItemsRelations = relations(businessItems, ({ one, many }) => ({
@@ -206,6 +226,8 @@ export type Category = typeof categories.$inferSelect;
 export type ProductCategory = typeof productCategories.$inferSelect;
 export type Business = typeof businesses.$inferSelect;
 export type NewBusiness = typeof businesses.$inferInsert;
+export type BusinessPhone = typeof businessPhones.$inferSelect;
+export type NewBusinessPhone = typeof businessPhones.$inferInsert;
 export type BusinessItem = typeof businessItems.$inferSelect;
 export type NewBusinessItem = typeof businessItems.$inferInsert;
 export type RefreshToken = typeof refreshTokens.$inferSelect;

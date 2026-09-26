@@ -9,7 +9,7 @@ import {
 import { db } from '../db.js';
 import { sendError } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
-import { businessItems, businesses, categories, productCategories, type Business } from '../schema.js';
+import { businessItems, businessPhones, businesses, categories, productCategories, type Business } from '../schema.js';
 
 function pickDefined(obj: Record<string, unknown>, keys: readonly string[]) {
   return Object.fromEntries(keys.filter((key) => obj[key] !== undefined).map((key) => [key, obj[key]]));
@@ -60,6 +60,14 @@ async function resolveProductCategory(
   return null;
 }
 
+async function businessContact(businessId: string): Promise<string[]> {
+  const rows = await db.query.businessPhones.findMany({
+    where: eq(businessPhones.businessId, businessId),
+    orderBy: (phones, { asc }) => [asc(phones.position)],
+  });
+  return rows.map((row) => row.phone);
+}
+
 export async function businessRoutes(app: FastifyInstance) {
   const producerOrAdmin = { preHandler: requireRole('productor', 'administrador') };
 
@@ -71,11 +79,21 @@ export async function businessRoutes(app: FastifyInstance) {
     if (!(await businessCategoryExists(parsed.data.categoryId))) {
       return sendError(reply, 400, 'Tipo de negocio inválido');
     }
-    const values = pickDefined(parsed.data, ['description', 'categoryId', 'address', 'phone', 'latitude', 'longitude', 'photoUrl']);
+    const phones = (parsed.data.phones ?? []).filter((phone) => phone.trim() !== '');
+    const values = pickDefined(parsed.data, ['description', 'categoryId', 'address', 'latitude', 'longitude', 'photoUrl']);
+    if (parsed.data.email != null && parsed.data.email.trim() !== '') {
+      values.email = parsed.data.email.trim();
+    }
+    const primaryPhone = phones[0] ?? (parsed.data.phone?.trim() ? parsed.data.phone.trim() : null);
     const [business] = await db
       .insert(businesses)
-      .values({ name: parsed.data.name, ownerId: request.currentUser!.id, ...values })
+      .values({ name: parsed.data.name, ownerId: request.currentUser!.id, phone: primaryPhone, ...values })
       .returning();
+    if (phones.length > 0) {
+      await db.insert(businessPhones).values(
+        phones.map((phone, index) => ({ businessId: business.id, phone, position: index })),
+      );
+    }
     return reply.code(201).send({ business });
   });
 
@@ -89,6 +107,7 @@ export async function businessRoutes(app: FastifyInstance) {
         description: businesses.description,
         address: businesses.address,
         phone: businesses.phone,
+        email: businesses.email,
         photoUrl: businesses.photoUrl,
         categoryId: businesses.categoryId,
         categoryName: categories.name,
@@ -111,8 +130,24 @@ export async function businessRoutes(app: FastifyInstance) {
           .where(inArray(businessItems.businessId, ids))
           .groupBy(businessItems.businessId)
       : [];
+    const phoneRows = ids.length
+      ? await db
+          .select({ businessId: businessPhones.businessId, phone: businessPhones.phone, position: businessPhones.position })
+          .from(businessPhones)
+          .where(inArray(businessPhones.businessId, ids))
+      : [];
+    const phonesByBusiness = new Map<string, string[]>();
+    for (const row of phoneRows) {
+      const list = phonesByBusiness.get(row.businessId) ?? [];
+      list[row.position] = row.phone;
+      phonesByBusiness.set(row.businessId, list);
+    }
     const countMap = new Map(counts.map((c) => [c.businessId, c.value]));
-    const items = rows.map((row) => ({ ...row, itemsCount: countMap.get(row.id) ?? 0 }));
+    const items = rows.map((row) => ({
+      ...row,
+      itemsCount: countMap.get(row.id) ?? 0,
+      phones: phonesByBusiness.get(row.id)?.filter(Boolean) ?? [],
+    }));
     return { items, total: items.length };
   });
 
@@ -124,7 +159,11 @@ export async function businessRoutes(app: FastifyInstance) {
       where: eq(businessItems.businessId, id),
       orderBy: (items, { asc }) => [asc(items.name)],
     });
-    return { business: { ...business, items: itemRows } };
+    const phones = await businessContact(id);
+    if (phones.length === 0 && business.phone) {
+      phones.push(business.phone);
+    }
+    return { business: { ...business, phones, items: itemRows } };
   });
 
   app.patch('/businesses/:id', producerOrAdmin, async (request, reply) => {
@@ -141,12 +180,28 @@ export async function businessRoutes(app: FastifyInstance) {
     if (Object.keys(parsed.data).length === 0) {
       return sendError(reply, 400, 'No hay campos para actualizar');
     }
-    const values = pickDefined(parsed.data, ['name', 'description', 'categoryId', 'address', 'phone', 'latitude', 'longitude', 'photoUrl', 'active']);
+    const values: Record<string, unknown> = pickDefined(parsed.data, ['name', 'description', 'categoryId', 'address', 'latitude', 'longitude', 'photoUrl', 'active', 'phone']);
+    let phones: string[] | undefined;
+    if (parsed.data.phones !== undefined) {
+      phones = parsed.data.phones.filter((phone) => phone.trim() !== '');
+      values.phone = phones[0] ?? null;
+    }
+    if (parsed.data.email !== undefined) {
+      values.email = parsed.data.email?.trim() || null;
+    }
     const [updated] = await db
       .update(businesses)
       .set({ ...values, updatedAt: new Date() })
       .where(eq(businesses.id, business.id))
       .returning();
+    if (phones !== undefined) {
+      await db.delete(businessPhones).where(eq(businessPhones.businessId, business.id));
+      if (phones.length > 0) {
+        await db.insert(businessPhones).values(
+          phones.map((phone, index) => ({ businessId: business.id, phone, position: index })),
+        );
+      }
+    }
     return { business: updated };
   });
 

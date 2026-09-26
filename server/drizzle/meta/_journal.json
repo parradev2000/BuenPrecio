@@ -50,6 +50,13 @@
       "when": 1790134149019,
       "tag": "0006_password_resets",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790386379471,
+      "tag": "0007_bitter_morlocks",
+      "breakpoints": true
     }
   ]
 }
